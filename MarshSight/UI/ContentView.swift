@@ -7,37 +7,32 @@ struct ContentView: View {
     @StateObject private var engine = NavigationEngine(route: NavRoute(name: "", features: []))
     @StateObject private var regions = RegionStore()
     @StateObject private var contributions = ContributionStore()
-    @State private var showMap = true
+
     @State private var showReport = false
     @State private var showRegionPicker = false
+    @State private var showAR = false
     @AppStorage("acceptedSafetyDisclaimer") private var acceptedSafety = false
 
-    // Computed once per fix in onChange, not on every body re-evaluation.
+    // Cached "where am I" context, recomputed once per coordinate change.
     @State private var nearestGauge: WaterGauge?
     @State private var currentLand: PublicLand?
     @State private var currentParcel: Parcel?
 
-    /// Route plus the active region's gauges plus user contributions.
-    private var allFeatures: [MarkerFeature] {
-        engine.route.features + (regions.active?.gaugeMarkers ?? []) + contributions.markers
-    }
-
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        Group {
             if !acceptedSafety {
                 SafetyDisclaimerView { acceptedSafety = true }
             } else if !isAuthorized {
                 permissionPrompt
             } else if regions.active == nil {
-                // No region chosen yet: pick/download one before doing any work.
                 RegionPickerView(store: regions,
                                  currentLocation: location.fix?.coordinate,
                                  allowDismiss: false)
             } else {
-                arExperience
+                home
             }
         }
-        .statusBarHidden(true)
+        .preferredColorScheme(.dark)
         .onAppear { location.start() }
         .onChange(of: location.fix) { _, newFix in
             guard let f = newFix else { return }
@@ -49,79 +44,47 @@ struct ContentView: View {
         }
     }
 
-    /// Recompute the cached "where am I" context against the active region's
-    /// static data. Runs once per coordinate change, not per body redraw.
-    private func updateContext(at c: CLLocationCoordinate2D) {
-        nearestGauge = regions.nearestGauge(to: c)
-        currentLand = regions.currentLand(at: c)
-        currentParcel = regions.active?.currentParcel(at: c)
+    private var home: some View {
+        MapHomeView(regions: regions,
+                    location: location,
+                    contributions: contributions,
+                    nearestGauge: nearestGauge,
+                    currentLand: currentLand,
+                    currentParcel: currentParcel,
+                    onEnterAR: { showAR = true },
+                    onReport: { showReport = true },
+                    onSwitchRegion: { showRegionPicker = true })
+            .fullScreenCover(isPresented: $showAR) {
+                ARExperienceView(location: location,
+                                 regions: regions,
+                                 engine: engine,
+                                 contributions: contributions,
+                                 nearestGauge: nearestGauge,
+                                 currentLand: currentLand,
+                                 currentParcel: currentParcel,
+                                 onClose: { showAR = false })
+            }
+            .sheet(isPresented: $showReport) {
+                ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
+                    if let c = location.fix?.coordinate {
+                        contributions.add(kind: kind, name: name, note: note, at: c, visibility: visibility)
+                    }
+                }
+                .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showRegionPicker) {
+                RegionPickerView(store: regions, currentLocation: location.fix?.coordinate)
+            }
     }
 
     private var isAuthorized: Bool {
         location.authorization == .authorizedWhenInUse || location.authorization == .authorizedAlways
     }
 
-    private var arExperience: some View {
-        ZStack(alignment: .topTrailing) {
-            ARNavView(features: allFeatures,
-                      fix: location.fix,
-                      publicLands: regions.active?.publicLands ?? [],
-                      regionToken: regions.active?.id ?? "")
-                .ignoresSafeArea()
-
-            HUDOverlay(guidance: engine.guidance,
-                       fix: location.fix,
-                       heading: location.heading,
-                       nearestGauge: nearestGauge,
-                       currentLand: currentLand,
-                       currentParcel: currentParcel,
-                       regionName: regions.active?.name)
-
-            mapAndControls
-        }
-        .sheet(isPresented: $showReport) {
-            ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
-                if let c = location.fix?.coordinate {
-                    contributions.add(kind: kind, name: name, note: note, at: c, visibility: visibility)
-                }
-            }
-            .presentationDetents([.medium, .large])
-        }
-        .sheet(isPresented: $showRegionPicker) {
-            RegionPickerView(store: regions, currentLocation: location.fix?.coordinate)
-        }
-    }
-
-    private var mapAndControls: some View {
-        VStack(alignment: .trailing, spacing: 10) {
-            if showMap {
-                MiniMapView(region: regions.active,
-                            track: location.track,
-                            contributionMarkers: contributions.markers)
-                    .equatable()
-                    .frame(width: 150, height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.5), lineWidth: 1))
-                    .onTapGesture { showMap.toggle() }
-            } else {
-                controlButton(icon: "map.fill") { showMap.toggle() }
-            }
-
-            controlButton(icon: "square.stack.3d.up") { showRegionPicker = true }
-            controlButton(icon: "plus.circle.fill") { showReport = true }
-        }
-        .padding(12)
-        .padding(.top, 40)
-    }
-
-    private func controlButton(icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .frame(width: 44, height: 44)
-                .background(.black.opacity(0.5), in: Circle())
-                .foregroundStyle(.white)
-        }
+    private func updateContext(at c: CLLocationCoordinate2D) {
+        nearestGauge = regions.nearestGauge(to: c)
+        currentLand = regions.currentLand(at: c)
+        currentParcel = regions.active?.currentParcel(at: c)
     }
 
     private var permissionPrompt: some View {
@@ -131,7 +94,7 @@ struct ContentView: View {
                 .foregroundStyle(.cyan)
             Text("MarshSight needs your location")
                 .font(.title2.weight(.semibold))
-            Text("We use GPS, heading, and the camera to place boundaries, water, and hazards into the real world around you.")
+            Text("Your location places boundaries, water, and hazards on the map. The camera is only used later, when you choose to open AR.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 32)

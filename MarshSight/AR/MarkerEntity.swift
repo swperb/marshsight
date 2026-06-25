@@ -29,7 +29,7 @@ final class MarkerEntity: Entity {
         // Beacon sphere.
         var mat = UnlitMaterial(color: color)
         mat.color = .init(tint: color.withAlphaComponent(0.95))
-        let sphere = ModelEntity(mesh: .generateSphere(radius: 0.35), materials: [mat])
+        let sphere = ModelEntity(mesh: .generateSphere(radius: 0.45), materials: [mat])
         addChild(sphere)
 
         // Post dropping toward the surface so the marker reads as grounded.
@@ -63,7 +63,7 @@ final class MarkerEntity: Entity {
         let mesh = MeshResource.generateText(
             line,
             extrusionDepth: 0.01,
-            font: .systemFont(ofSize: 0.28, weight: .semibold),
+            font: .systemFont(ofSize: 0.36, weight: .semibold),
             containerFrame: .zero,
             alignment: .center,
             lineBreakMode: .byWordWrapping

@@ -155,12 +155,18 @@ struct ARNavView: UIViewRepresentable {
             lastRegionToken = regionToken
         }
 
-        /// Billboard at roughly 10 fps rather than every frame.
+        /// Billboard labels toward the camera and scale each marker so it keeps a
+        /// roughly constant on-screen size no matter how far away it is. Without
+        /// this, distant markers shrink to unreadable specks. ~10 fps.
         func tickBillboard() {
             frame &+= 1
             guard frame % 6 == 0, let arView else { return }
             let cam = arView.cameraTransform.translation
-            for entity in entities.values { entity.billboard(toward: cam) }
+            for entity in entities.values {
+                entity.billboard(toward: cam)
+                let d = simd_distance(entity.position(relativeTo: nil), cam)
+                entity.scale = SIMD3(repeating: max(0.6, d / 10))
+            }
         }
     }
 }

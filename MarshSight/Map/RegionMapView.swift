@@ -1,28 +1,30 @@
 import SwiftUI
 import MapKit
 
-/// A 2D mini-map of the active offline region. It is `Equatable` on the region
-/// identity and breadcrumb length, so SwiftUI skips re-rendering it on every GPS
-/// fix; it only redraws when the region changes or the track grows. Geometry is
-/// already simplified at download time, so overlays are light.
-struct MiniMapView: View, Equatable {
+/// The region map, used full-screen on the home screen and as a small inset in
+/// AR. It is `Equatable` on the region identity and breadcrumb length, so
+/// SwiftUI skips re-rendering it on every GPS fix; it only redraws when the
+/// region changes or the track grows. Geometry is simplified at download time,
+/// so overlays are light.
+struct RegionMapView: View, Equatable {
 
     let region: LoadedRegion?
     let track: [CLLocationCoordinate2D]
     var contributionMarkers: [MarkerFeature] = []
+    var interactive: Bool = true
 
     @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
 
-    static func == (lhs: MiniMapView, rhs: MiniMapView) -> Bool {
+    static func == (lhs: RegionMapView, rhs: RegionMapView) -> Bool {
         lhs.region == rhs.region
             && lhs.track.count == rhs.track.count
             && lhs.contributionMarkers.count == rhs.contributionMarkers.count
+            && lhs.interactive == rhs.interactive
     }
 
     var body: some View {
-        Map(position: $camera) {
+        Map(position: $camera, interactionModes: interactive ? .all : []) {
             if let region {
-                // Private parcel outlines (thin, no fill) under the other layers.
                 ForEach(region.parcels) { parcel in
                     ForEach(Array(parcel.rings.enumerated()), id: \.offset) { _, ring in
                         if ring.count > 2 {
@@ -32,7 +34,6 @@ struct MiniMapView: View, Equatable {
                         }
                     }
                 }
-
                 ForEach(Array(region.lakes.enumerated()), id: \.offset) { _, ring in
                     if ring.count > 2 {
                         MapPolygon(coordinates: ring)
