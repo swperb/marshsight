@@ -28,6 +28,16 @@ struct ContentView: View {
                 RegionPickerView(store: regions,
                                  currentLocation: location.fix?.coordinate,
                                  allowDismiss: false)
+            } else if showAR {
+                // Swap to AR entirely (don't keep the home map rendering behind it).
+                ARExperienceView(location: location,
+                                 regions: regions,
+                                 engine: engine,
+                                 contributions: contributions,
+                                 nearestGauge: nearestGauge,
+                                 currentLand: currentLand,
+                                 currentParcel: currentParcel,
+                                 onClose: { showAR = false })
             } else {
                 home
             }
@@ -54,16 +64,6 @@ struct ContentView: View {
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true })
-            .fullScreenCover(isPresented: $showAR) {
-                ARExperienceView(location: location,
-                                 regions: regions,
-                                 engine: engine,
-                                 contributions: contributions,
-                                 nearestGauge: nearestGauge,
-                                 currentLand: currentLand,
-                                 currentParcel: currentParcel,
-                                 onClose: { showAR = false })
-            }
             .sheet(isPresented: $showReport) {
                 ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
                     if let c = location.fix?.coordinate {

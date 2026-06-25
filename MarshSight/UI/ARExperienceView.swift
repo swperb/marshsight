@@ -17,10 +17,13 @@ struct ARExperienceView: View {
     var onClose: () -> Void
 
     @State private var showReport = false
-    @State private var showInset = true
+    @State private var showInset = false
 
+    /// AR shows local features only: your route and your own reports. Gauges
+    /// (often tens of miles away) live on the map and in the HUD banner, not as
+    /// giant floating labels in the camera.
     private var allFeatures: [MarkerFeature] {
-        engine.route.features + (regions.active?.gaugeMarkers ?? []) + contributions.markers
+        engine.route.features + contributions.markers
     }
 
     var body: some View {

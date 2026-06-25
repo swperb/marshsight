@@ -164,8 +164,10 @@ struct ARNavView: UIViewRepresentable {
             let cam = arView.cameraTransform.translation
             for entity in entities.values {
                 entity.billboard(toward: cam)
+                // Keep a readable on-screen size, but clamp hard so a far marker
+                // never balloons into a screen-spanning label.
                 let d = simd_distance(entity.position(relativeTo: nil), cam)
-                entity.scale = SIMD3(repeating: max(0.6, d / 10))
+                entity.scale = SIMD3(repeating: min(2.2, max(0.7, d / 35)))
             }
         }
     }
