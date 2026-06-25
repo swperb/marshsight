@@ -8,6 +8,8 @@ struct MapHomeView: View {
     @ObservedObject var regions: RegionStore
     @ObservedObject var location: LocationProvider
     @ObservedObject var contributions: ContributionStore
+    @ObservedObject var recorder: TrackRecorder
+    @ObservedObject var offline: OfflineManager
 
     let nearestGauge: WaterGauge?
     let currentLand: PublicLand?
@@ -19,6 +21,7 @@ struct MapHomeView: View {
     var onSwitchRegion: () -> Void
 
     @State private var recenterTick = 0
+    @AppStorage("basemap") private var basemap: Basemap = .hybrid
 
     var body: some View {
         ZStack {
@@ -26,6 +29,7 @@ struct MapHomeView: View {
                           track: location.track,
                           contributionMarkers: contributions.markers,
                           interactive: true,
+                          basemap: basemap,
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -157,11 +161,72 @@ struct MapHomeView: View {
 
     private var sideButtons: some View {
         VStack(spacing: 12) {
+            basemapMenu
+            offlineButton
+            recordButton
+            if recorder.hasTrack && !recorder.isRecording, let gpx = recorder.exportGPX() {
+                ShareLink(item: gpx) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(width: 46, height: 46)
+                        .background(.black.opacity(0.55), in: Circle())
+                        .foregroundStyle(.white)
+                }
+            }
             circleButton(icon: "plus", action: onReport)
             circleButton(icon: "location.fill.viewfinder") { recenterTick += 1 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         .padding(.trailing, 14)
+    }
+
+    private var offlineButton: some View {
+        Button {
+            if let r = regions.active, !offline.isDownloading {
+                offline.download(region: r, basemap: basemap)
+            }
+        } label: {
+            ZStack {
+                Circle().fill(.black.opacity(0.55)).frame(width: 46, height: 46)
+                if offline.isDownloading {
+                    Circle().trim(from: 0, to: offline.progress)
+                        .stroke(.cyan, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .frame(width: 38, height: 38).rotationEffect(.degrees(-90))
+                    Text("\(Int(offline.progress * 100))").font(.caption2.bold()).foregroundStyle(.white)
+                } else {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                }
+            }
+        }
+    }
+
+    private var recordButton: some View {
+        Button {
+            if recorder.isRecording { recorder.stop() } else { recorder.start() }
+        } label: {
+            Image(systemName: recorder.isRecording ? "stop.fill" : "record.circle")
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 46, height: 46)
+                .background((recorder.isRecording ? Color.red : .black.opacity(0.55)), in: Circle())
+                .foregroundStyle(.white)
+        }
+    }
+
+    private var basemapMenu: some View {
+        Menu {
+            Picker("Basemap", selection: $basemap) {
+                ForEach(Basemap.allCases) { b in
+                    Label(b.label, systemImage: b.icon).tag(b)
+                }
+            }
+        } label: {
+            Image(systemName: basemap.icon)
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 46, height: 46)
+                .background(.black.opacity(0.55), in: Circle())
+                .foregroundStyle(.white)
+        }
     }
 
     private func circleButton(icon: String, action: @escaping () -> Void) -> some View {

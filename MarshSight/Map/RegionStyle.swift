@@ -5,25 +5,54 @@ import CoreLocation
 /// region's vector overlays inlined as GeoJSON. USGS National Map tiles are
 /// public domain and cacheable, unlike Apple or Google tiles, which is what
 /// makes a truly offline FOSS basemap possible.
+/// The available open USGS National Map basemaps. All public domain, no key.
+enum Basemap: String, CaseIterable, Identifiable {
+    case hybrid, imagery, topo, relief
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .hybrid: return "Satellite + Topo"
+        case .imagery: return "Satellite"
+        case .topo: return "Topo"
+        case .relief: return "Terrain"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .hybrid: return "map.fill"
+        case .imagery: return "globe.americas.fill"
+        case .topo: return "map"
+        case .relief: return "mountain.2.fill"
+        }
+    }
+    /// USGS National Map tiled service for this basemap (ArcGIS z/y/x order).
+    var tileURL: String {
+        let service: String
+        switch self {
+        case .hybrid: service = "USGSImageryTopo"
+        case .imagery: service = "USGSImageryOnly"
+        case .topo: service = "USGSTopo"
+        case .relief: service = "USGSShadedReliefOnly"
+        }
+        return "https://basemap.nationalmap.gov/arcgis/rest/services/\(service)/MapServer/tile/{z}/{y}/{x}"
+    }
+}
+
 enum RegionStyle {
 
-    /// USGS National Map imagery+topo. Public domain, no key. ArcGIS tile order
-    /// is z/y/x, which MapLibre fills via {z}/{y}/{x}.
-    static let basemapTiles =
-        "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
-
     /// Write a style file for the region and return its URL.
-    static func fileURL(region: LoadedRegion?, contributions: [MarkerFeature]) -> URL {
-        let style = build(region: region, contributions: contributions)
+    static func fileURL(region: LoadedRegion?, contributions: [MarkerFeature], basemap: Basemap) -> URL {
+        let style = build(region: region, contributions: contributions, basemap: basemap)
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("style_\(region?.id ?? "empty").json")
+            .appendingPathComponent("style_\(region?.id ?? "empty")_\(basemap.rawValue).json")
         if let data = try? JSONSerialization.data(withJSONObject: style) {
             try? data.write(to: url, options: .atomic)
         }
         return url
     }
 
-    private static func build(region: LoadedRegion?, contributions: [MarkerFeature]) -> [String: Any] {
+    private static func build(region: LoadedRegion?, contributions: [MarkerFeature], basemap: Basemap) -> [String: Any] {
         let lands = region?.publicLands ?? []
         let landFC = featureCollection(lands.flatMap { land in
             land.rings.map { polygon($0, props: ["access": land.access.rawValue]) }
@@ -42,7 +71,7 @@ enum RegionStyle {
         return [
             "version": 8,
             "sources": [
-                "usgs": ["type": "raster", "tiles": [basemapTiles], "tileSize": 256, "maxzoom": 16],
+                "usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16],
                 "lands": geojsonSource(landFC),
                 "parcels": geojsonSource(parcelFC),
                 "lakes": geojsonSource(lakeFC),

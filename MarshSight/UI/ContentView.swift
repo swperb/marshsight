@@ -8,6 +8,8 @@ struct ContentView: View {
     @StateObject private var regions = RegionStore()
     @StateObject private var contributions = ContributionStore()
     @StateObject private var weather = WeatherStore()
+    @StateObject private var recorder = TrackRecorder()
+    @StateObject private var offline = OfflineManager()
 
     @State private var showReport = false
     @State private var showRegionPicker = false
@@ -49,6 +51,7 @@ struct ContentView: View {
             guard let f = newFix else { return }
             engine.update(with: f)
             updateContext(at: f.coordinate)
+            recorder.record(f)
             Task { await weather.refreshIfStale(at: f.coordinate) }
         }
         .onChange(of: regions.active) { _, _ in
@@ -60,6 +63,8 @@ struct ContentView: View {
         MapHomeView(regions: regions,
                     location: location,
                     contributions: contributions,
+                    recorder: recorder,
+                    offline: offline,
                     nearestGauge: nearestGauge,
                     currentLand: currentLand,
                     currentParcel: currentParcel,

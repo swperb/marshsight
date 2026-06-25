@@ -13,6 +13,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     let track: [CLLocationCoordinate2D]
     var contributionMarkers: [MarkerFeature] = []
     var interactive: Bool = true
+    var basemap: Basemap = .hybrid
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -21,6 +22,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             && lhs.track.count == rhs.track.count
             && lhs.contributionMarkers.count == rhs.contributionMarkers.count
             && lhs.interactive == rhs.interactive
+            && lhs.basemap == rhs.basemap
             && lhs.recenterTick == rhs.recenterTick
     }
 
@@ -29,7 +31,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     func makeUIView(context: Context) -> MLNMapView {
         let map = MLNMapView(frame: .zero)
         map.delegate = context.coordinator
-        map.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers)
+        map.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         map.showsUserLocation = true
         map.userTrackingMode = .follow
         map.allowsScrolling = interactive
@@ -40,9 +42,12 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             map.setCenter(c, zoomLevel: 13, animated: false)
         }
         context.coordinator.map = map
-        context.coordinator.lastToken = region?.id ?? "empty"
+        context.coordinator.lastToken = styleToken
         return map
     }
+
+    /// Style is rebuilt when either the region or the basemap changes.
+    private var styleToken: String { "\(region?.id ?? "empty")|\(basemap.rawValue)" }
 
     func updateUIView(_ uiView: MLNMapView, context: Context) {
         let coord = context.coordinator
@@ -50,11 +55,10 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.track = track
         coord.contributionMarkers = contributionMarkers
 
-        let token = region?.id ?? "empty"
-        if token != coord.lastToken {
-            coord.lastToken = token
+        if styleToken != coord.lastToken {
+            coord.lastToken = styleToken
             coord.styleLoaded = false
-            uiView.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers)
+            uiView.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         } else {
             coord.applyDynamicSources()
         }
