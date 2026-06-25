@@ -1,4 +1,4 @@
-import WaitlistForm from "./WaitlistForm";
+const TESTFLIGHT_URL = "https://testflight.apple.com/join/rwCZwKBC";
 
 const useCases = [
   {
@@ -58,10 +58,12 @@ export default function Home() {
             </a>
           </nav>
           <a
-            href="#waitlist"
+            href={TESTFLIGHT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-lg bg-moss-500 px-4 py-2 text-sm font-semibold text-marsh-950 transition hover:bg-moss-400"
           >
-            Join waitlist
+            Join the beta
           </a>
         </div>
       </header>
@@ -88,10 +90,12 @@ export default function Home() {
               </p>
               <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <a
-                  href="#waitlist"
+                  href={TESTFLIGHT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full rounded-xl bg-moss-500 px-7 py-3.5 text-center text-base font-semibold text-marsh-950 transition hover:bg-moss-400 sm:w-auto"
                 >
-                  Join the waitlist
+                  Get the beta on TestFlight
                 </a>
                 <a
                   href="#approach"
@@ -184,42 +188,27 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Waitlist */}
-        <section
-          id="waitlist"
-          className="border-t border-marsh-800/80 bg-marsh-950/40"
-        >
-          <div className="mx-auto max-w-3xl px-5 py-20 text-center sm:py-24">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Get early access
-            </h2>
-            <p className="mt-4 text-foreground/75">
-              We are building MarshSight in the open. Join the waitlist and we
-              will let you know the moment the beta is ready for your region.
-            </p>
-            <div className="mx-auto mt-10 max-w-xl text-left">
-              <WaitlistForm />
-            </div>
-          </div>
-        </section>
-
         {/* Beta */}
-        <section id="beta" className="border-t border-marsh-800/80">
+        <section id="beta" className="border-t border-marsh-800/80 bg-marsh-950/40">
           <div className="mx-auto max-w-3xl px-5 py-20 text-center sm:py-24">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Join the beta
             </h2>
             <p className="mt-4 text-foreground/75">
-              The first builds ship through TestFlight on iOS. Once the public
-              link is live, this button will take you straight to it.
+              MarshSight is live in open beta on iOS through TestFlight. Install
+              the TestFlight app, then tap below to get MarshSight on your iPhone.
             </p>
-            {/* TODO: replace href="#" with the public TestFlight invite link once the beta is live. */}
             <a
-              href="#"
-              className="mt-8 inline-block rounded-xl border border-water-500/50 bg-water-500/10 px-7 py-3.5 text-base font-semibold text-water-400 transition hover:bg-water-500/20"
+              href={TESTFLIGHT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 inline-block rounded-xl bg-moss-500 px-7 py-3.5 text-base font-semibold text-marsh-950 transition hover:bg-moss-400"
             >
-              Open in TestFlight (coming soon)
+              Get the beta on TestFlight
             </a>
+            <p className="mt-4 text-sm text-foreground/55">
+              Requires an iPhone and the free TestFlight app from Apple.
+            </p>
           </div>
         </section>
       </main>
