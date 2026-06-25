@@ -1,4 +1,8 @@
-# MarshSight
+<p align="center">
+  <img src="assets/icon.png" alt="MarshSight" width="120" height="120">
+</p>
+
+<h1 align="center">MarshSight</h1>
 
 An iPhone AR navigation aid for the outdoors. It overlays route waypoints,
 channel markers, hazards, and public-access boundaries onto the live camera

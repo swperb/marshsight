@@ -12,10 +12,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_TITLE =
+  "MarshSight: Free, open-source AR navigation for hunters and anglers";
+const SITE_DESCRIPTION =
+  "MarshSight overlays public-land boundaries, river channels, live water levels, and hazards onto your live camera view. Free and open source.";
+
 export const metadata: Metadata = {
-  title: "MarshSight — Free, open-source AR navigation for hunters and anglers",
-  description:
-    "MarshSight overlays public-land boundaries, river channels, live water levels, and hazards onto your live camera view. Free and open source.",
+  metadataBase: new URL("https://marshsight.com"),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: "MarshSight",
+  openGraph: {
+    type: "website",
+    url: "https://marshsight.com",
+    siteName: "MarshSight",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
