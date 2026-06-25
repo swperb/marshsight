@@ -31,7 +31,8 @@ struct ARExperienceView: View {
             ARNavView(features: allFeatures,
                       fix: location.fix,
                       publicLands: regions.active?.publicLands ?? [],
-                      regionToken: regions.active?.id ?? "")
+                      regionToken: regions.active?.id ?? "",
+                      destination: engine.destination?.coordinate)
                 .ignoresSafeArea()
 
             HUDOverlay(guidance: engine.guidance,

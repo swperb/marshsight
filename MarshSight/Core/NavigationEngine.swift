@@ -9,6 +9,27 @@ final class NavigationEngine: ObservableObject {
 
     @Published var route: NavRoute
     @Published private(set) var guidance: Guidance = .empty
+    @Published private(set) var destination: NavDestination?
+
+    var isNavigating: Bool { destination != nil }
+
+    /// Point-to-point navigation to a single destination (a marina, a sandbar,
+    /// a crowd-sourced spot). The destination becomes the active waypoint, so
+    /// the steering arrow and trackline point straight to it.
+    func navigate(to dest: NavDestination) {
+        destination = dest
+        route = NavRoute(name: dest.name, features: [
+            MarkerFeature(kind: .waypoint, name: dest.name,
+                          latitude: dest.latitude, longitude: dest.longitude)
+        ])
+        resetToStart()
+    }
+
+    func stopNavigating() {
+        destination = nil
+        route = NavRoute(name: "", features: [])
+        guidance = .empty
+    }
 
     /// How close, in meters, counts as "arrived" at a waypoint.
     var arrivalRadius: Double = 20

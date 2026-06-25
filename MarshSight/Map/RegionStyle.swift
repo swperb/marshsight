@@ -95,6 +95,8 @@ enum RegionStyle {
                 "rivers": geojsonSource(riverFC),
                 "points": geojsonSource(pointFC),
                 "track": geojsonSource(featureCollection([])),
+                "nav": geojsonSource(featureCollection([])),
+                "dest": geojsonSource(featureCollection([])),
             ],
             "layers": [
                 ["id": "bg", "type": "background", "paint": ["background-color": "#0a0f0d"]],
@@ -116,8 +118,26 @@ enum RegionStyle {
                 ["id": "points", "type": "circle", "source": "points",
                  "paint": ["circle-radius": 5, "circle-color": ["get", "color"],
                            "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5]],
+                ["id": "nav-line", "type": "line", "source": "nav",
+                 "layout": ["line-cap": "round", "line-join": "round"],
+                 "paint": ["line-color": "#0A84FF", "line-width": 5, "line-opacity": 0.95]],
+                ["id": "dest", "type": "circle", "source": "dest",
+                 "paint": ["circle-radius": 8, "circle-color": "#0A84FF",
+                           "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 3]],
             ],
         ]
+    }
+
+    /// Trackline from the user to the destination (the blue "go there" line).
+    static func navGeoJSON(from: CLLocationCoordinate2D?, to: CLLocationCoordinate2D?) -> [String: Any] {
+        guard let from, let to else { return featureCollection([]) }
+        return featureCollection([lineString([from, to])])
+    }
+
+    /// The destination point marker.
+    static func destGeoJSON(_ to: CLLocationCoordinate2D?) -> [String: Any] {
+        guard let to else { return featureCollection([]) }
+        return featureCollection([point(to)])
     }
 
     /// GeoJSON for the breadcrumb track, applied to the "track" source at runtime.

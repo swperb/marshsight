@@ -15,6 +15,7 @@ struct ARNavView: UIViewRepresentable {
     var fix: NavFix?
     var publicLands: [PublicLand] = []
     var regionToken: String = ""
+    var destination: CLLocationCoordinate2D? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -54,6 +55,7 @@ struct ARNavView: UIViewRepresentable {
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.sync(features: features, fix: fix)
         context.coordinator.syncBoundaries(lands: publicLands, fix: fix, regionToken: regionToken)
+        context.coordinator.syncNavLine(destination: destination, fix: fix)
     }
 
     static func dismantleUIView(_ uiView: ARView, coordinator: Coordinator) {
@@ -75,6 +77,9 @@ struct ARNavView: UIViewRepresentable {
         private var lastFeatureIDs: Set<UUID> = []
         private var lastBoundaryOrigin: CLLocationCoordinate2D?
         private var lastRegionToken = ""
+        private var navLine: NavLineEntity?
+        private var lastNavOrigin: CLLocationCoordinate2D?
+        private var lastDestKey = ""
         private var frame = 0
 
         // Only do real work when the user has actually moved a little.
@@ -153,6 +158,30 @@ struct ARNavView: UIViewRepresentable {
             }
             lastBoundaryOrigin = origin
             lastRegionToken = regionToken
+        }
+
+        /// Draw a blue trackline on the water from the user toward the
+        /// destination, rebuilt as the user moves or the destination changes.
+        func syncNavLine(destination: CLLocationCoordinate2D?, fix: NavFix?) {
+            guard let root, let arView else { return }
+            guard let destination, let fix else {
+                navLine?.removeFromParent(); navLine = nil; lastDestKey = ""
+                return
+            }
+            let origin = fix.coordinate
+            let key = String(format: "%.5f,%.5f", destination.latitude, destination.longitude)
+            let moved = lastNavOrigin.map { GeoMath.distance($0, origin) } ?? .greatestFiniteMagnitude
+            guard navLine == nil || key != lastDestKey || moved > 8 else { return }
+
+            navLine?.removeFromParent()
+            let offset = GeoMath.arPosition(of: destination, from: origin, maxDistance: 200)
+            let cam = arView.cameraTransform.translation
+            let entity = NavLineEntity(end: SIMD2(offset.x, offset.z), y: 0)
+            entity.position = SIMD3(cam.x, cam.y - 1.4, cam.z)
+            root.addChild(entity)
+            navLine = entity
+            lastNavOrigin = origin
+            lastDestKey = key
         }
 
         /// Billboard labels toward the camera and scale each marker so it keeps a

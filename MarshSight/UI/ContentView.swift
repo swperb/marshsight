@@ -13,6 +13,7 @@ struct ContentView: View {
 
     @State private var showReport = false
     @State private var showRegionPicker = false
+    @State private var showDestinationSearch = false
     @State private var showAR = false
     @AppStorage("acceptedSafetyDisclaimer") private var acceptedSafety = false
     @AppStorage("basemap") private var basemap: Basemap = .hybrid
@@ -68,6 +69,7 @@ struct ContentView: View {
                     contributions: contributions,
                     recorder: recorder,
                     offline: offline,
+                    engine: engine,
                     basemap: $basemap,
                     nearestGauge: nearestGauge,
                     currentLand: currentLand,
@@ -75,7 +77,8 @@ struct ContentView: View {
                     weather: weather.weather,
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
-                    onSwitchRegion: { showRegionPicker = true })
+                    onSwitchRegion: { showRegionPicker = true },
+                    onSearch: { showDestinationSearch = true })
             .sheet(isPresented: $showReport) {
                 ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
                     if let c = location.fix?.coordinate {
@@ -89,6 +92,12 @@ struct ContentView: View {
                                  offline: offline,
                                  currentLocation: location.fix?.coordinate,
                                  basemap: basemap)
+            }
+            .sheet(isPresented: $showDestinationSearch) {
+                DestinationSearchView(
+                    center: location.fix?.coordinate ?? regions.active?.center,
+                    spots: (regions.active?.gaugeMarkers ?? []) + contributions.markers,
+                    onSelect: { engine.navigate(to: $0) })
             }
     }
 

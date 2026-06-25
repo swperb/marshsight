@@ -62,6 +62,16 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
     }
 }
 
+/// A place the user is navigating to.
+struct NavDestination: Equatable {
+    var name: String
+    var latitude: Double
+    var longitude: Double
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
 /// An ordered route the boat is following, plus loose features (hazards, markers).
 struct NavRoute: Codable {
     var name: String

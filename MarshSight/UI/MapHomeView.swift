@@ -10,6 +10,7 @@ struct MapHomeView: View {
     @ObservedObject var contributions: ContributionStore
     @ObservedObject var recorder: TrackRecorder
     @ObservedObject var offline: OfflineManager
+    @ObservedObject var engine: NavigationEngine
     @Binding var basemap: Basemap
 
     let nearestGauge: WaterGauge?
@@ -20,6 +21,7 @@ struct MapHomeView: View {
     var onEnterAR: () -> Void
     var onReport: () -> Void
     var onSwitchRegion: () -> Void
+    var onSearch: () -> Void
 
     @State private var recenterTick = 0
     @State private var showFeedback = false
@@ -31,6 +33,7 @@ struct MapHomeView: View {
                           contributionMarkers: contributions.markers,
                           interactive: true,
                           basemap: basemap,
+                          destination: engine.destination?.coordinate,
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -38,8 +41,9 @@ struct MapHomeView: View {
             VStack(spacing: 0) {
                 topBar
                 if weather != nil { weatherStrip }
+                searchBar
                 Spacer()
-                contextCard
+                if engine.isNavigating { navBanner } else { contextCard }
                 enterARButton
             }
             .padding(.horizontal, 14)
@@ -75,6 +79,59 @@ struct MapHomeView: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    // MARK: - Search + navigation
+
+    private var searchBar: some View {
+        Button(action: onSearch) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                Text("Where to?")
+                Spacer()
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            .background(.black.opacity(0.55), in: Capsule())
+        }
+        .padding(.top, 8)
+    }
+
+    private var navBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "location.north.fill")
+                .font(.title3.weight(.bold)).foregroundStyle(.cyan)
+                .rotationEffect(.degrees(relativeBearing))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(engine.destination?.name ?? "Destination")
+                    .font(.headline).foregroundStyle(.white).lineLimit(1)
+                Text(navStats).font(.subheadline).foregroundStyle(.white.opacity(0.85)).monospacedDigit()
+            }
+            Spacer()
+            Button { engine.stopNavigating() } label: {
+                Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.white.opacity(0.8))
+            }
+        }
+        .padding(14)
+        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 18))
+        .padding(.bottom, 10)
+    }
+
+    private var relativeBearing: Double {
+        guard let target = engine.guidance.bearingToWaypoint else { return 0 }
+        return NavigationEngine.relativeBearing(heading: location.heading, target: target)
+    }
+
+    private var navStats: String {
+        guard let d = engine.guidance.distanceToWaypoint else { return "Arrived" }
+        let mi = d / 1609.344
+        let dist = mi < 0.2 ? String(format: "%.0f yd", mi * 1760) : String(format: "%.1f mi", mi)
+        if let speed = location.fix?.speedMetersPerSecond, speed > 0.6 {
+            let mins = Int((d / speed) / 60)
+            return mins < 1 ? "\(dist)  ·  under 1 min" : "\(dist)  ·  \(mins) min"
+        }
+        return dist
     }
 
     // MARK: - Weather strip (wind is the headline for hunters)
@@ -159,7 +216,7 @@ struct MapHomeView: View {
         Button(action: onEnterAR) {
             HStack(spacing: 10) {
                 Image(systemName: "arkit").font(.title3.weight(.bold))
-                Text("Look Around in AR").font(.headline)
+                Text(engine.isNavigating ? "Navigate in AR" : "Look Around in AR").font(.headline)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)

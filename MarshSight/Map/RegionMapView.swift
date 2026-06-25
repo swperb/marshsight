@@ -14,6 +14,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     var contributionMarkers: [MarkerFeature] = []
     var interactive: Bool = true
     var basemap: Basemap = .hybrid
+    var destination: CLLocationCoordinate2D? = nil
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -23,6 +24,8 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             && lhs.contributionMarkers.count == rhs.contributionMarkers.count
             && lhs.interactive == rhs.interactive
             && lhs.basemap == rhs.basemap
+            && lhs.destination?.latitude == rhs.destination?.latitude
+            && lhs.destination?.longitude == rhs.destination?.longitude
             && lhs.recenterTick == rhs.recenterTick
     }
 
@@ -54,6 +57,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.region = region
         coord.track = track
         coord.contributionMarkers = contributionMarkers
+        coord.destination = destination
 
         if styleToken != coord.lastToken {
             coord.lastToken = styleToken
@@ -77,18 +81,31 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         var region: LoadedRegion?
         var track: [CLLocationCoordinate2D] = []
         var contributionMarkers: [MarkerFeature] = []
+        var destination: CLLocationCoordinate2D?
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             styleLoaded = true
             applyDynamicSources()
         }
 
-        /// Update the track and points sources in place (no style reload).
+        /// Keep the trackline glued to the live user position as it updates.
+        func mapView(_ mapView: MLNMapView, didUpdate userLocation: MLNUserLocation?) {
+            updateNavLine(userLocation?.coordinate)
+        }
+
+        /// Update the track, points, destination, and nav line in place.
         func applyDynamicSources() {
             guard styleLoaded, let style = map?.style else { return }
             setShape(style, "track", RegionStyle.trackGeoJSON(track))
             let points = (region?.gaugeMarkers ?? []) + contributionMarkers
             setShape(style, "points", RegionStyle.pointsGeoJSON(points))
+            setShape(style, "dest", RegionStyle.destGeoJSON(destination))
+            updateNavLine(map?.userLocation?.coordinate)
+        }
+
+        private func updateNavLine(_ user: CLLocationCoordinate2D?) {
+            guard styleLoaded, let style = map?.style else { return }
+            setShape(style, "nav", RegionStyle.navGeoJSON(from: user, to: destination))
         }
 
         private func setShape(_ style: MLNStyle, _ id: String, _ geojson: [String: Any]) {
