@@ -30,7 +30,7 @@ struct MapHomeView: View {
         ZStack {
             RegionMapView(region: regions.active,
                           track: location.track,
-                          contributionMarkers: contributions.markers,
+                          contributionMarkers: contributions.allMarkers,
                           interactive: true,
                           basemap: basemap,
                           navPath: engine.remainingPath,

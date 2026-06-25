@@ -77,6 +77,7 @@ enum RegionStyle {
         let parcelFC = featureCollection((region?.parcels ?? []).flatMap { p in p.rings.map { polygon($0) } })
         let lakeFC = featureCollection((region?.lakes ?? []).map { polygon($0) })
         let riverFC = featureCollection((region?.riverLines ?? []).map { lineString($0) })
+        let trailFC = featureCollection((region?.trails ?? []).map { lineString($0) })
         let points = (region?.gaugeMarkers ?? []) + contributions
         let pointFC = featureCollection(points.map {
             point($0.coordinate, props: ["color": hex($0.kind)])
@@ -93,6 +94,7 @@ enum RegionStyle {
                 "parcels": geojsonSource(parcelFC),
                 "lakes": geojsonSource(lakeFC),
                 "rivers": geojsonSource(riverFC),
+                "trails": geojsonSource(trailFC),
                 "points": geojsonSource(pointFC),
                 "track": geojsonSource(featureCollection([])),
                 "nav": geojsonSource(featureCollection([])),
@@ -113,6 +115,9 @@ enum RegionStyle {
                  "paint": ["line-color": "#F59E0B", "line-opacity": 0.55, "line-width": 0.7]],
                 ["id": "rivers-line", "type": "line", "source": "rivers",
                  "paint": ["line-color": "#3B82F6", "line-opacity": 0.7, "line-width": 2]],
+                ["id": "trails-line", "type": "line", "source": "trails",
+                 "layout": ["line-cap": "round"],
+                 "paint": ["line-color": "#E0903C", "line-width": 2, "line-dasharray": [2, 1.5]]],
                 ["id": "track-line", "type": "line", "source": "track",
                  "paint": ["line-color": "#FFD60A", "line-width": 2.5]],
                 ["id": "points", "type": "circle", "source": "points",

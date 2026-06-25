@@ -138,8 +138,8 @@ struct DestinationSearchView: View {
 
     private var communitySpots: [Contribution] {
         let q = query.trimmingCharacters(in: .whitespaces)
-        let matched = q.isEmpty ? contributions.contributions
-            : contributions.contributions.filter { $0.name.localizedCaseInsensitiveContains(q) }
+        let matched = q.isEmpty ? contributions.allSpots
+            : contributions.allSpots.filter { $0.name.localizedCaseInsensitiveContains(q) }
         guard let c = center else { return matched }
         return matched.sorted { GeoMath.distance($0.coordinate, c) < GeoMath.distance($1.coordinate, c) }
     }

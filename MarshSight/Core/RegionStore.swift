@@ -14,6 +14,7 @@ struct LoadedRegion: Equatable {
     let lakes: [[CLLocationCoordinate2D]]
     let publicLands: [PublicLand]
     let parcels: [Parcel]
+    let trails: [[CLLocationCoordinate2D]]
 
     var gaugeMarkers: [MarkerFeature] { gauges.map { $0.asMarkerFeature() } }
 
@@ -85,11 +86,13 @@ final class RegionStore: ObservableObject {
         async let r = try? await NHDService.riverLines(center: center, radiusKm: radiusKm, maxLines: 200)
         async let l = try? await NHDService.lakes(center: center, radiusKm: radiusKm, maxLakes: 60)
         async let p = try? await PADUSService.publicLands(center: center, radiusKm: radiusKm, maxUnits: 80)
+        async let t = try? await TrailsService.trails(center: center, radiusKm: radiusKm)
 
         let gauges = await g ?? []
         let rivers = await r ?? []
         let lakes = await l ?? []
         let lands = await p ?? []
+        let trails = await t ?? []
 
         // Parcels are per-state and dense, so fetch them in a tighter radius
         // from whichever state we are in (if it publishes free parcel data).
@@ -104,6 +107,7 @@ final class RegionStore: ObservableObject {
         let refLat = center.latitude
         let simpRivers = GeometrySimplify.simplify(lines: rivers, toleranceMeters: riverTol, refLat: refLat)
         let simpLakes = GeometrySimplify.simplify(lines: lakes, toleranceMeters: lakeTol, refLat: refLat)
+        let simpTrails = GeometrySimplify.simplify(lines: trails, toleranceMeters: riverTol, refLat: refLat)
         let simpLands = lands.map { GeometrySimplify.simplify(land: $0, toleranceMeters: landTol, refLat: refLat) }
         let simpParcels = parcels.map { p in
             Parcel(id: p.id, owner: p.owner,
@@ -117,7 +121,8 @@ final class RegionStore: ObservableObject {
             riverLines: RegionPack.encode(lines: simpRivers),
             lakes: RegionPack.encode(lines: simpLakes),
             lands: RegionPack.encode(lands: simpLands),
-            parcels: RegionPack.encode(parcels: simpParcels)
+            parcels: RegionPack.encode(parcels: simpParcels),
+            trails: RegionPack.encode(lines: simpTrails)
         )
 
         persist(pack)
@@ -153,7 +158,8 @@ final class RegionStore: ObservableObject {
             riverLines: RegionPack.decode(lines: pack.riverLines),
             lakes: RegionPack.decode(lines: pack.lakes),
             publicLands: RegionPack.decode(lands: pack.lands),
-            parcels: RegionPack.decode(parcels: pack.parcels)
+            parcels: RegionPack.decode(parcels: pack.parcels),
+            trails: RegionPack.decode(lines: pack.trails)
         )
     }
 

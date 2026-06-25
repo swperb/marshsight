@@ -77,6 +77,10 @@ struct Contribution: Identifiable, Codable, Equatable {
 final class ContributionStore: ObservableObject {
 
     @Published private(set) var contributions: [Contribution] = []
+    /// Spots others have shared, fetched from the server and cached for offline.
+    @Published private(set) var communitySpots: [Contribution] = []
+
+    private var lastFetchCenter: CLLocationCoordinate2D?
 
     /// Anonymous per-install author handle (until real accounts land).
     private let deviceId: String
@@ -95,9 +99,18 @@ final class ContributionStore: ObservableObject {
             deviceId = id
         }
         load()
+        loadCommunity()
     }
 
     var markers: [MarkerFeature] { contributions.map { $0.asMarkerFeature() } }
+    var communityMarkers: [MarkerFeature] { communitySpots.map { $0.asMarkerFeature() } }
+    /// Own spots plus shared community spots, for the map and search.
+    var allMarkers: [MarkerFeature] { markers + communityMarkers }
+    /// Every votable spot (own + community), deduped by id.
+    var allSpots: [Contribution] {
+        var seen = Set<String>()
+        return (contributions + communitySpots).filter { seen.insert($0.id).inserted }
+    }
 
     func add(kind: Contribution.Kind, name: String, note: String?,
              at coordinate: CLLocationCoordinate2D, visibility: Contribution.Visibility) {
@@ -119,21 +132,49 @@ final class ContributionStore: ObservableObject {
         add(kind: .waypoint, name: name, note: nil, at: coordinate, visibility: .public)
     }
 
-    /// Cast or toggle a vote on a spot. Updates locally and posts to the server.
+    /// Cast or toggle a vote on a spot (own or community). Updates locally and
+    /// posts to the server, where the canonical tallies and status are computed.
     func vote(_ spot: Contribution, _ delta: Int) {
-        guard let i = contributions.firstIndex(where: { $0.id == spot.id }) else { return }
-        var c = contributions[i]
-        let prev = c.myVote ?? 0
-        if prev == 1 { c.upvotes = max(0, (c.upvotes ?? 0) - 1) }
-        if prev == -1 { c.downvotes = max(0, (c.downvotes ?? 0) - 1) }
-        let newVote = (prev == delta) ? 0 : delta
-        if newVote == 1 { c.upvotes = (c.upvotes ?? 0) + 1 }
-        if newVote == -1 { c.downvotes = (c.downvotes ?? 0) + 1 }
-        c.myVote = newVote == 0 ? nil : newVote
-        if (c.status ?? "pending") != "verified", c.score >= Contribution.verifyThreshold { c.status = "verified" }
-        contributions[i] = c
-        save()
+        let apply: (Contribution) -> Contribution = { input in
+            var c = input
+            let prev = c.myVote ?? 0
+            if prev == 1 { c.upvotes = max(0, (c.upvotes ?? 0) - 1) }
+            if prev == -1 { c.downvotes = max(0, (c.downvotes ?? 0) - 1) }
+            let newVote = (prev == delta) ? 0 : delta
+            if newVote == 1 { c.upvotes = (c.upvotes ?? 0) + 1 }
+            if newVote == -1 { c.downvotes = (c.downvotes ?? 0) + 1 }
+            c.myVote = newVote == 0 ? nil : newVote
+            if (c.status ?? "pending") != "verified", c.score >= Contribution.verifyThreshold { c.status = "verified" }
+            return c
+        }
+        if let i = contributions.firstIndex(where: { $0.id == spot.id }) {
+            contributions[i] = apply(contributions[i]); save()
+        } else if let i = communitySpots.firstIndex(where: { $0.id == spot.id }) {
+            communitySpots[i] = apply(communitySpots[i]); saveCommunity()
+        } else { return }
+        let newVote = (spot.myVote ?? 0) == delta ? 0 : delta
         Task { await postVote(spotID: spot.id, value: newVote) }
+    }
+
+    /// Fetch shared spots near a point from the server, cached for offline use.
+    func fetchNearby(_ center: CLLocationCoordinate2D) async {
+        if let last = lastFetchCenter, GeoMath.distance(last, center) < 4_000 { return }
+        guard !PlatformAPI.baseURL.isEmpty,
+              var comps = URLComponents(string: "\(PlatformAPI.baseURL)/v1/contributions") else { return }
+        comps.queryItems = [
+            .init(name: "lat", value: String(center.latitude)),
+            .init(name: "lon", value: String(center.longitude)),
+            .init(name: "radiusKm", value: "30"),
+            .init(name: "deviceId", value: deviceId),
+        ]
+        guard let url = comps.url,
+              let (data, resp) = try? await URLSession.shared.data(from: url),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let decoded = try? JSONDecoder().decode(ServerResponse.self, from: data) else { return }
+        lastFetchCenter = center
+        // Community = others' spots (our own already live in `contributions`).
+        communitySpots = decoded.contributions.filter { $0.deviceId != deviceId }.map { $0.toContribution() }
+        saveCommunity()
     }
 
     private func postVote(spotID: String, value: Int) async {
@@ -161,6 +202,20 @@ final class ContributionStore: ObservableObject {
         try? data.write(to: fileURL, options: .atomic)
     }
 
+    private var communityFileURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("community_spots.json")
+    }
+    private func loadCommunity() {
+        guard let data = try? Data(contentsOf: communityFileURL),
+              let decoded = try? JSONDecoder().decode([Contribution].self, from: data) else { return }
+        communitySpots = decoded
+    }
+    private func saveCommunity() {
+        guard let data = try? JSONEncoder().encode(communitySpots) else { return }
+        try? data.write(to: communityFileURL, options: .atomic)
+    }
+
     // MARK: - Best-effort sync to the platform API
 
     private func sync(_ c: Contribution) async {
@@ -176,6 +231,36 @@ final class ContributionStore: ObservableObject {
         ]
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.shared.data(for: req)
+    }
+}
+
+// MARK: - Server DTOs
+
+private struct ServerResponse: Decodable { let contributions: [ServerContribution] }
+
+private struct ServerContribution: Decodable {
+    let id: String
+    let kind: String
+    let name: String
+    let note: String?
+    let lat: Double
+    let lon: Double
+    let visibility: String
+    let createdAt: String
+    let deviceId: String?
+    let upvotes: Int?
+    let downvotes: Int?
+    let status: String?
+
+    func toContribution() -> Contribution {
+        Contribution(
+            id: id,
+            kind: Contribution.Kind(rawValue: kind) ?? .waypoint,
+            name: name, note: note,
+            latitude: lat, longitude: lon,
+            visibility: Contribution.Visibility(rawValue: visibility) ?? .public,
+            createdAt: ISO8601DateFormatter().date(from: createdAt) ?? Date(),
+            upvotes: upvotes, downvotes: downvotes, status: status, myVote: nil)
     }
 }
 

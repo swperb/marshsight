@@ -57,6 +57,7 @@ struct ContentView: View {
             updateContext(at: f.coordinate)
             recorder.record(f)
             Task { await weather.refreshIfStale(at: f.coordinate) }
+            Task { await contributions.fetchNearby(f.coordinate) }
         }
         .onChange(of: regions.active) { _, _ in
             if let c = location.fix?.coordinate { updateContext(at: c) }

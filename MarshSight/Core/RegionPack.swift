@@ -16,6 +16,7 @@ struct RegionPack: Codable {
     var lakes: [[GeoPoint]]
     var lands: [CodableLand]
     var parcels: [CodableParcel] = []
+    var trails: [[GeoPoint]] = []
 
     struct GeoPoint: Codable {
         var lat: Double
