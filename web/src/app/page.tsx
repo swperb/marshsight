@@ -43,7 +43,7 @@ export default function Home() {
       <header className="sticky top-0 z-20 border-b border-marsh-800/80 bg-marsh-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
-            <span className="inline-block h-5 w-5 rounded-sm bg-gradient-to-br from-moss-400 to-water-500" />
+            <img src="/logo.png" alt="MarshSight logo" width={28} height={28} className="h-7 w-7 rounded-md" />
             MarshSight
           </span>
           <nav className="hidden items-center gap-7 text-sm text-foreground/70 sm:flex">
@@ -229,7 +229,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-12 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span className="flex items-center gap-2 text-base font-bold">
-              <span className="inline-block h-4 w-4 rounded-sm bg-gradient-to-br from-moss-400 to-water-500" />
+              <img src="/logo.png" alt="MarshSight logo" width={24} height={24} className="h-6 w-6 rounded-md" />
               MarshSight
             </span>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-foreground/55">
@@ -240,19 +240,19 @@ export default function Home() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground/70">
             {/* TODO: point these at the real GitHub org/repo once published. */}
             <a
-              href="https://github.com/marshsight"
+              href="https://github.com/swperb/marshsight"
               className="transition hover:text-foreground"
             >
               GitHub
             </a>
             <a
-              href="https://github.com/marshsight/marshsight"
+              href="https://github.com/swperb/marshsight"
               className="transition hover:text-foreground"
             >
               Source code
             </a>
             <a
-              href="https://github.com/marshsight/marshsight/issues"
+              href="https://github.com/swperb/marshsight/issues"
               className="transition hover:text-foreground"
             >
               Report an issue
