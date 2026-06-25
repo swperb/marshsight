@@ -28,20 +28,32 @@ enum HuntingUnitsService {
         let kind: String       // short label, e.g. "Deer Zone"
     }
 
-    /// Verified state sources.
-    /// AR: Arkansas Game & Fish Commission deer zones (public-domain state data,
-    ///     services.arcgis.com/5bMc8SlGDYGINZr5).
-    /// AL: Alabama Wildlife Management Areas. Alabama does not publish open
-    ///     deer-season-zone polygons, and its official DCNR server is currently
-    ///     unreachable, so this is a hosted copy of the public-record WMA
-    ///     boundaries (named: "Barbour WMA", "Black Warrior WMA", ...).
+    /// Verified state sources, all free/public, no key.
+    /// AR: Arkansas Game & Fish Commission deer zones (services.arcgis.com/5bMc8SlGDYGINZr5).
+    /// AL: Alabama Wildlife Management Areas. Alabama publishes no open deer-zone
+    ///     polygons and its official DCNR server is unreachable, so this is a
+    ///     hosted copy of the public-record WMA boundaries.
+    /// MS: MDWFP official deer zones (DELTA ZONE, SOUTH ZONE, ...) from the
+    ///     Mississippi Wildlife agency's own ArcGIS server.
+    /// LA: LDWF official Wildlife Management Areas and Refuges.
+    /// MO: Missouri Department of Conservation lands (conservation areas), via
+    ///     the state spatial data service (MSDIS, University of Missouri).
     static let registry: [String: Source] = [
         "AR": Source(
             url: "https://services.arcgis.com/5bMc8SlGDYGINZr5/arcgis/rest/services/deerZones/FeatureServer/0/query",
             nameField: "fname", kind: "Deer Zone"),
         "AL": Source(
             url: "https://services7.arcgis.com/iEMmryaM5E3wkdnU/arcgis/rest/services/Alabama_Wildlife_Management_Areas/FeatureServer/0/query",
-            nameField: "Name", kind: "WMA")
+            nameField: "Name", kind: "WMA"),
+        "MS": Source(
+            url: "https://arcgis.mdwfp.com/arcgis/rest/services/Public/Public_WMA_Data/MapServer/7/query",
+            nameField: "Name", kind: "Deer Zone"),
+        "LA": Source(
+            url: "https://services1.arcgis.com/6euNCaGPCgCzgAVF/arcgis/rest/services/LDWF_WMA_Refuge/FeatureServer/0/query",
+            nameField: "NAME", kind: "WMA"),
+        "MO": Source(
+            url: "https://services2.arcgis.com/kNS2ppBA4rwAQQZy/arcgis/rest/services/MO_Missouri_Department_of_Conservation_Lands/FeatureServer/0/query",
+            nameField: "Area_Name", kind: "Conservation Area")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
@@ -49,7 +61,7 @@ enum HuntingUnitsService {
     static func units(stateCode: String,
                       center: CLLocationCoordinate2D,
                       radiusKm: Double = 40,
-                      maxUnits: Int = 12) async throws -> [HuntingUnit] {
+                      maxUnits: Int = 50) async throws -> [HuntingUnit] {
         guard let src = registry[stateCode.uppercased()] else { return [] }
 
         let m = GeoMath.metersPerDegree(atLatitude: center.latitude)
