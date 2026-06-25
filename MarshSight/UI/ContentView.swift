@@ -7,6 +7,7 @@ struct ContentView: View {
     @StateObject private var engine = NavigationEngine(route: NavRoute(name: "", features: []))
     @StateObject private var regions = RegionStore()
     @StateObject private var contributions = ContributionStore()
+    @StateObject private var weather = WeatherStore()
 
     @State private var showReport = false
     @State private var showRegionPicker = false
@@ -48,6 +49,7 @@ struct ContentView: View {
             guard let f = newFix else { return }
             engine.update(with: f)
             updateContext(at: f.coordinate)
+            Task { await weather.refreshIfStale(at: f.coordinate) }
         }
         .onChange(of: regions.active) { _, _ in
             if let c = location.fix?.coordinate { updateContext(at: c) }
@@ -61,6 +63,7 @@ struct ContentView: View {
                     nearestGauge: nearestGauge,
                     currentLand: currentLand,
                     currentParcel: currentParcel,
+                    weather: weather.weather,
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true })

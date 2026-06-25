@@ -12,6 +12,7 @@ struct MapHomeView: View {
     let nearestGauge: WaterGauge?
     let currentLand: PublicLand?
     let currentParcel: Parcel?
+    let weather: Weather?
 
     var onEnterAR: () -> Void
     var onReport: () -> Void
@@ -28,6 +29,7 @@ struct MapHomeView: View {
 
             VStack(spacing: 0) {
                 topBar
+                if weather != nil { weatherStrip }
                 Spacer()
                 contextCard
                 enterARButton
@@ -55,6 +57,46 @@ struct MapHomeView: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    // MARK: - Weather strip (wind is the headline for hunters)
+
+    @ViewBuilder private var weatherStrip: some View {
+        if let w = weather {
+            let moon = MoonPhase.current()
+            HStack(spacing: 0) {
+                weatherMetric(icon: "thermometer.medium", text: String(format: "%.0f°F", w.temperatureF))
+                divider
+                HStack(spacing: 6) {
+                    Image(systemName: "location.north.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.cyan)
+                        // Rotate to show the direction the wind blows TOWARD.
+                        .rotationEffect(.degrees(w.windFromDegrees + 180))
+                    Text(String(format: "%.0f mph %@", w.windSpeedMph, w.windFromCardinal))
+                        .font(.caption.weight(.semibold)).monospacedDigit()
+                }
+                divider
+                weatherMetric(icon: "barometer", text: String(format: "%.2f", w.pressureInHg))
+                divider
+                weatherMetric(icon: moon.symbol, text: "\(Int(moon.illumination * 100))%")
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(.black.opacity(0.55), in: Capsule())
+            .padding(.top, 8)
+        }
+    }
+
+    private func weatherMetric(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(.white.opacity(0.8))
+            Text(text).font(.caption.weight(.semibold)).monospacedDigit()
+        }
+    }
+
+    private var divider: some View {
+        Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 16).padding(.horizontal, 10)
     }
 
     // MARK: - Context card (where am I, what is the water doing)
