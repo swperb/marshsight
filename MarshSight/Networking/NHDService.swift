@@ -8,83 +8,100 @@ enum NHDService {
 
     enum ServiceError: Error { case badResponse }
 
-    /// River/stream polylines intersecting a box around `center`. Each result is
-    /// an ordered list of WGS84 coordinates ready to draw as a MapPolyline.
+    /// River, stream, and creek polylines intersecting a box around `center`.
+    /// NHDFlowline (layer 6) includes every watercourse from big rivers down to
+    /// small creeks. We page through results (NHD caps at 2000 per request) so a
+    /// region captures the whole network, not just the first handful.
     static func riverLines(center: CLLocationCoordinate2D,
                            radiusKm: Double = 12,
-                           maxLines: Int = 60) async throws -> [[CLLocationCoordinate2D]] {
-        let m = GeoMath.metersPerDegree(atLatitude: center.latitude)
-        let dLat = (radiusKm * 1000) / m.latM
-        let dLon = (radiusKm * 1000) / m.lonM
-        let envelope = String(format: "%.5f,%.5f,%.5f,%.5f",
-                              center.longitude - dLon, center.latitude - dLat,
-                              center.longitude + dLon, center.latitude + dLat)
+                           maxLines: Int = 4000) async throws -> [[CLLocationCoordinate2D]] {
+        let envelope = box(center: center, radiusKm: radiusKm)
+        let base = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6/query"
 
-        var comps = URLComponents(string: "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6/query")!
-        comps.queryItems = [
-            .init(name: "where", value: "1=1"),
-            .init(name: "geometry", value: envelope),
-            .init(name: "geometryType", value: "esriGeometryEnvelope"),
-            .init(name: "inSR", value: "4326"),
-            .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
-            .init(name: "outFields", value: "gnis_name"),
-            .init(name: "returnGeometry", value: "true"),
-            .init(name: "resultRecordCount", value: String(maxLines)),
-            .init(name: "f", value: "json")
-        ]
-        guard let url = comps.url else { throw ServiceError.badResponse }
+        var all: [[CLLocationCoordinate2D]] = []
+        var offset = 0
+        let page = 2000
+        while all.count < maxLines {
+            var comps = URLComponents(string: base)!
+            comps.queryItems = [
+                .init(name: "where", value: "1=1"),
+                .init(name: "geometry", value: envelope),
+                .init(name: "geometryType", value: "esriGeometryEnvelope"),
+                .init(name: "inSR", value: "4326"),
+                .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
+                .init(name: "outFields", value: ""),
+                .init(name: "returnGeometry", value: "true"),
+                .init(name: "resultRecordCount", value: String(page)),
+                .init(name: "resultOffset", value: String(offset)),
+                .init(name: "f", value: "json")
+            ]
+            guard let url = comps.url else { break }
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+                  let decoded = try? JSONDecoder().decode(ESRIPolylineResponse.self, from: data)
+            else { break }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw ServiceError.badResponse
-        }
-
-        let decoded = try JSONDecoder().decode(ESRIPolylineResponse.self, from: data)
-        // ArcGIS returns Web Mercator (wkid 102100/3857); reproject to WGS84.
-        return decoded.features.flatMap { feature in
-            feature.geometry.paths.map { path in
-                path.compactMap { pair -> CLLocationCoordinate2D? in
-                    guard pair.count == 2 else { return nil }
-                    return WebMercator.toWGS84(x: pair[0], y: pair[1])
+            // ArcGIS returns Web Mercator (wkid 102100/3857); reproject to WGS84.
+            all.append(contentsOf: decoded.features.flatMap { feature in
+                feature.geometry.paths.map { path in
+                    path.compactMap { pair -> CLLocationCoordinate2D? in
+                        guard pair.count == 2 else { return nil }
+                        return WebMercator.toWGS84(x: pair[0], y: pair[1])
+                    }
                 }
-            }
+            })
+            if decoded.features.count < page { break }   // last page
+            offset += page
         }
+        return all
     }
 
-    /// Lake and reservoir shorelines from NHD waterbodies (layer 12), as polygon
-    /// rings in WGS84. This is the water surface a fisherman works. Requested as
-    /// GeoJSON so no reprojection is needed.
+    /// Lake, reservoir, and pond shorelines from NHD waterbodies (layer 12), as
+    /// polygon rings in WGS84. The waterbody layer includes small ponds, not just
+    /// big lakes, so paging captures all of them across the region.
     static func lakes(center: CLLocationCoordinate2D,
                       radiusKm: Double = 12,
-                      maxLakes: Int = 30) async throws -> [[CLLocationCoordinate2D]] {
+                      maxLakes: Int = 1500) async throws -> [[CLLocationCoordinate2D]] {
+        let envelope = box(center: center, radiusKm: radiusKm)
+        let base = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/12/query"
+
+        var all: [[CLLocationCoordinate2D]] = []
+        var offset = 0
+        let page = 2000
+        while all.count < maxLakes {
+            var comps = URLComponents(string: base)!
+            comps.queryItems = [
+                .init(name: "where", value: "1=1"),
+                .init(name: "geometry", value: envelope),
+                .init(name: "geometryType", value: "esriGeometryEnvelope"),
+                .init(name: "inSR", value: "4326"),
+                .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
+                .init(name: "outFields", value: ""),
+                .init(name: "returnGeometry", value: "true"),
+                .init(name: "resultRecordCount", value: String(page)),
+                .init(name: "resultOffset", value: String(offset)),
+                .init(name: "f", value: "geojson")
+            ]
+            guard let url = comps.url else { break }
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+                  let fc = try? JSONDecoder().decode(WaterbodyFC.self, from: data)
+            else { break }
+            all.append(contentsOf: fc.features.compactMap { $0.geometry?.rings() }.flatMap { $0 })
+            if fc.features.count < page { break }
+            offset += page
+        }
+        return all
+    }
+
+    /// A WGS84 envelope "minLon,minLat,maxLon,maxLat" around a center point.
+    private static func box(center: CLLocationCoordinate2D, radiusKm: Double) -> String {
         let m = GeoMath.metersPerDegree(atLatitude: center.latitude)
         let dLat = (radiusKm * 1000) / m.latM
         let dLon = (radiusKm * 1000) / m.lonM
-        let envelope = String(format: "%.5f,%.5f,%.5f,%.5f",
-                              center.longitude - dLon, center.latitude - dLat,
-                              center.longitude + dLon, center.latitude + dLat)
-
-        var comps = URLComponents(string: "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/12/query")!
-        comps.queryItems = [
-            .init(name: "where", value: "1=1"),
-            .init(name: "geometry", value: envelope),
-            .init(name: "geometryType", value: "esriGeometryEnvelope"),
-            .init(name: "inSR", value: "4326"),
-            .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
-            .init(name: "outFields", value: "gnis_name"),
-            .init(name: "returnGeometry", value: "true"),
-            .init(name: "resultRecordCount", value: String(maxLakes)),
-            .init(name: "f", value: "geojson")
-        ]
-        guard let url = comps.url else { throw ServiceError.badResponse }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw ServiceError.badResponse
-        }
-
-        let fc = try JSONDecoder().decode(WaterbodyFC.self, from: data)
-        return fc.features.compactMap { $0.geometry?.rings() }.flatMap { $0 }
+        return String(format: "%.5f,%.5f,%.5f,%.5f",
+                      center.longitude - dLon, center.latitude - dLat,
+                      center.longitude + dLon, center.latitude + dLat)
     }
 }
 

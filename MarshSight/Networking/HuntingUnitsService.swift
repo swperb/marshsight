@@ -28,12 +28,20 @@ enum HuntingUnitsService {
         let kind: String       // short label, e.g. "Deer Zone"
     }
 
-    /// Verified official sources. Arkansas Game & Fish Commission deer zones are
-    /// public-domain state data (services.arcgis.com/5bMc8SlGDYGINZr5).
+    /// Verified state sources.
+    /// AR: Arkansas Game & Fish Commission deer zones (public-domain state data,
+    ///     services.arcgis.com/5bMc8SlGDYGINZr5).
+    /// AL: Alabama Wildlife Management Areas. Alabama does not publish open
+    ///     deer-season-zone polygons, and its official DCNR server is currently
+    ///     unreachable, so this is a hosted copy of the public-record WMA
+    ///     boundaries (named: "Barbour WMA", "Black Warrior WMA", ...).
     static let registry: [String: Source] = [
         "AR": Source(
             url: "https://services.arcgis.com/5bMc8SlGDYGINZr5/arcgis/rest/services/deerZones/FeatureServer/0/query",
-            nameField: "fname", kind: "Deer Zone")
+            nameField: "fname", kind: "Deer Zone"),
+        "AL": Source(
+            url: "https://services7.arcgis.com/iEMmryaM5E3wkdnU/arcgis/rest/services/Alabama_Wildlife_Management_Areas/FeatureServer/0/query",
+            nameField: "Name", kind: "WMA")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
@@ -58,7 +66,7 @@ enum HuntingUnitsService {
             .init(name: "geometryType", value: "esriGeometryEnvelope"),
             .init(name: "inSR", value: "4326"),
             .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
-            .init(name: "outFields", value: "OBJECTID,\(src.nameField)"),
+            .init(name: "outFields", value: "*"),
             .init(name: "returnGeometry", value: "true"),
             .init(name: "resultRecordCount", value: String(maxUnits)),
             .init(name: "f", value: "geojson")

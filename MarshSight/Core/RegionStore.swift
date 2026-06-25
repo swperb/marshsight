@@ -89,8 +89,8 @@ final class RegionStore: ObservableObject {
         status = "Downloading \(resolvedName)..."
 
         async let g = try? await USGSWaterService.nearbyGauges(center: center, radiusKm: max(radiusKm, 40))
-        async let r = try? await NHDService.riverLines(center: center, radiusKm: radiusKm, maxLines: 200)
-        async let l = try? await NHDService.lakes(center: center, radiusKm: radiusKm, maxLakes: 60)
+        async let r = try? await NHDService.riverLines(center: center, radiusKm: radiusKm, maxLines: 4000)
+        async let l = try? await NHDService.lakes(center: center, radiusKm: radiusKm, maxLakes: 1500)
         async let p = try? await PADUSService.publicLands(center: center, radiusKm: radiusKm, maxUnits: 80)
         async let t = try? await TrailsService.trails(center: center, radiusKm: radiusKm)
 
