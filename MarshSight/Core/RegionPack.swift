@@ -17,6 +17,7 @@ struct RegionPack: Codable {
     var lands: [CodableLand]
     var parcels: [CodableParcel] = []
     var trails: [[GeoPoint]] = []
+    var huntingUnits: [CodableHuntingUnit] = []
 
     struct GeoPoint: Codable {
         var lat: Double
@@ -36,6 +37,12 @@ struct RegionPack: Codable {
     struct CodableParcel: Codable {
         var id: String
         var owner: String?
+        var rings: [[GeoPoint]]
+    }
+
+    struct CodableHuntingUnit: Codable {
+        var id: Int
+        var name: String
         var rings: [[GeoPoint]]
     }
 
@@ -74,6 +81,18 @@ struct RegionPack: Codable {
     static func decode(parcels: [CodableParcel]) -> [Parcel] {
         parcels.map { c in
             Parcel(id: c.id, owner: c.owner, rings: c.rings.map { $0.map(\.coordinate) })
+        }
+    }
+
+    static func encode(units: [HuntingUnit]) -> [CodableHuntingUnit] {
+        units.map { u in
+            CodableHuntingUnit(id: u.id, name: u.name, rings: u.rings.map { $0.map(GeoPoint.init) })
+        }
+    }
+
+    static func decode(units: [CodableHuntingUnit]) -> [HuntingUnit] {
+        units.map { c in
+            HuntingUnit(id: c.id, name: c.name, rings: c.rings.map { $0.map(\.coordinate) })
         }
     }
 }

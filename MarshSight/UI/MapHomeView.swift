@@ -16,6 +16,7 @@ struct MapHomeView: View {
     let nearestGauge: WaterGauge?
     let currentLand: PublicLand?
     let currentParcel: Parcel?
+    let currentUnit: HuntingUnit?
     let weather: Weather?
 
     var onEnterAR: () -> Void
@@ -203,6 +204,10 @@ struct MapHomeView: View {
                            title: "Private Land",
                            sub: parcel.owner.map { "Owner: \($0)" } ?? "Owner not listed")
             }
+            if let unit = currentUnit {
+                contextRow(color: .purple, icon: "scope",
+                           title: unit.name, sub: "Hunting unit")
+            }
             if let g = nearestGauge {
                 contextRow(color: .teal, icon: "gauge.with.dots.needle.bottom.50percent",
                            title: g.name,
@@ -213,7 +218,7 @@ struct MapHomeView: View {
         .padding(12)
         .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 16))
         .padding(.bottom, 12)
-        .opacity(currentLand == nil && currentParcel == nil && nearestGauge == nil ? 0 : 1)
+        .opacity(currentLand == nil && currentParcel == nil && currentUnit == nil && nearestGauge == nil ? 0 : 1)
     }
 
     private func contextRow(color: Color, icon: String, title: String, sub: String) -> some View {

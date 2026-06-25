@@ -15,8 +15,14 @@ struct LoadedRegion: Equatable {
     let publicLands: [PublicLand]
     let parcels: [Parcel]
     let trails: [[CLLocationCoordinate2D]]
+    let huntingUnits: [HuntingUnit]
 
     var gaugeMarkers: [MarkerFeature] { gauges.map { $0.asMarkerFeature() } }
+
+    /// The regulatory hunting unit the user is standing in, if any.
+    func currentUnit(at c: CLLocationCoordinate2D) -> HuntingUnit? {
+        huntingUnits.first { $0.contains(c) }
+    }
 
     /// The private parcel the user is standing on, if any (owner lookup).
     func currentParcel(at c: CLLocationCoordinate2D) -> Parcel? {
@@ -94,13 +100,21 @@ final class RegionStore: ObservableObject {
         let lands = await p ?? []
         let trails = await t ?? []
 
-        // Parcels are per-state and dense, so fetch them in a tighter radius
-        // from whichever state we are in (if it publishes free parcel data).
+        // Per-state layers: parcels and regulatory hunting units, fetched from
+        // whichever state we are in (if it publishes free data).
+        let stateCode = StateParcelService.stateCode(from: placemark?.administrativeArea)
+
         var parcels: [Parcel] = []
-        if let stateCode = StateParcelService.stateCode(from: placemark?.administrativeArea),
-           StateParcelService.hasCoverage(stateCode: stateCode) {
+        if let stateCode, StateParcelService.hasCoverage(stateCode: stateCode) {
             status = "Downloading parcels..."
             parcels = (try? await StateParcelService.parcels(stateCode: stateCode, center: center)) ?? []
+        }
+
+        var huntingUnits: [HuntingUnit] = []
+        if let stateCode, HuntingUnitsService.hasCoverage(stateCode: stateCode) {
+            status = "Downloading hunting units..."
+            huntingUnits = (try? await HuntingUnitsService.units(stateCode: stateCode, center: center,
+                                                                 radiusKm: max(radiusKm, 40))) ?? []
         }
 
         status = "Optimizing map..."
@@ -113,6 +127,10 @@ final class RegionStore: ObservableObject {
             Parcel(id: p.id, owner: p.owner,
                    rings: p.rings.map { GeometrySimplify.simplify($0, toleranceMeters: parcelTol, refLat: refLat) })
         }
+        let simpUnits = huntingUnits.map { u in
+            HuntingUnit(id: u.id, name: u.name,
+                        rings: u.rings.map { GeometrySimplify.simplify($0, toleranceMeters: landTol, refLat: refLat) })
+        }
 
         let pack = RegionPack(
             id: UUID().uuidString, name: resolvedName, savedAt: Date(),
@@ -122,7 +140,8 @@ final class RegionStore: ObservableObject {
             lakes: RegionPack.encode(lines: simpLakes),
             lands: RegionPack.encode(lands: simpLands),
             parcels: RegionPack.encode(parcels: simpParcels),
-            trails: RegionPack.encode(lines: simpTrails)
+            trails: RegionPack.encode(lines: simpTrails),
+            huntingUnits: RegionPack.encode(units: simpUnits)
         )
 
         persist(pack)
@@ -159,7 +178,8 @@ final class RegionStore: ObservableObject {
             lakes: RegionPack.decode(lines: pack.lakes),
             publicLands: RegionPack.decode(lands: pack.lands),
             parcels: RegionPack.decode(parcels: pack.parcels),
-            trails: RegionPack.decode(lines: pack.trails)
+            trails: RegionPack.decode(lines: pack.trails),
+            huntingUnits: RegionPack.decode(units: pack.huntingUnits)
         )
     }
 

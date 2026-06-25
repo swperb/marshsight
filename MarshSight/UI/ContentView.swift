@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var nearestGauge: WaterGauge?
     @State private var currentLand: PublicLand?
     @State private var currentParcel: Parcel?
+    @State private var currentUnit: HuntingUnit?
 
     var body: some View {
         Group {
@@ -75,6 +76,7 @@ struct ContentView: View {
                     nearestGauge: nearestGauge,
                     currentLand: currentLand,
                     currentParcel: currentParcel,
+                    currentUnit: currentUnit,
                     weather: weather.weather,
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
@@ -119,6 +121,7 @@ struct ContentView: View {
         nearestGauge = regions.nearestGauge(to: c)
         currentLand = regions.currentLand(at: c)
         currentParcel = regions.active?.currentParcel(at: c)
+        currentUnit = regions.active?.currentUnit(at: c)
     }
 
     private var permissionPrompt: some View {

@@ -75,6 +75,9 @@ enum RegionStyle {
             land.rings.map { polygon($0, props: ["access": land.access.rawValue]) }
         })
         let parcelFC = featureCollection((region?.parcels ?? []).flatMap { p in p.rings.map { polygon($0) } })
+        let unitFC = featureCollection((region?.huntingUnits ?? []).flatMap { u in
+            u.rings.map { polygon($0, props: ["name": u.name]) }
+        })
         let lakeFC = featureCollection((region?.lakes ?? []).map { polygon($0) })
         let riverFC = featureCollection((region?.riverLines ?? []).map { lineString($0) })
         let trailFC = featureCollection((region?.trails ?? []).map { lineString($0) })
@@ -92,6 +95,7 @@ enum RegionStyle {
                 "usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16],
                 "lands": geojsonSource(landFC),
                 "parcels": geojsonSource(parcelFC),
+                "units": geojsonSource(unitFC),
                 "lakes": geojsonSource(lakeFC),
                 "rivers": geojsonSource(riverFC),
                 "trails": geojsonSource(trailFC),
@@ -111,6 +115,10 @@ enum RegionStyle {
                  "paint": ["fill-color": accessColor, "fill-opacity": 0.22]],
                 ["id": "lands-line", "type": "line", "source": "lands",
                  "paint": ["line-color": accessColor, "line-width": 1.5]],
+                ["id": "units-line", "type": "line", "source": "units",
+                 "layout": ["line-join": "round"],
+                 "paint": ["line-color": "#A855F7", "line-opacity": 0.8, "line-width": 2.5,
+                           "line-dasharray": [3, 2]]],
                 ["id": "parcels-line", "type": "line", "source": "parcels",
                  "paint": ["line-color": "#F59E0B", "line-opacity": 0.55, "line-width": 0.7]],
                 ["id": "rivers-line", "type": "line", "source": "rivers",
