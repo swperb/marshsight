@@ -10,6 +10,7 @@ struct MapHomeView: View {
     @ObservedObject var contributions: ContributionStore
     @ObservedObject var recorder: TrackRecorder
     @ObservedObject var offline: OfflineManager
+    @Binding var basemap: Basemap
 
     let nearestGauge: WaterGauge?
     let currentLand: PublicLand?
@@ -21,7 +22,7 @@ struct MapHomeView: View {
     var onSwitchRegion: () -> Void
 
     @State private var recenterTick = 0
-    @AppStorage("basemap") private var basemap: Basemap = .hybrid
+    @State private var showFeedback = false
 
     var body: some View {
         ZStack {
@@ -46,6 +47,7 @@ struct MapHomeView: View {
 
             sideButtons
         }
+        .sheet(isPresented: $showFeedback) { FeedbackView() }
     }
 
     // MARK: - Top bar
@@ -61,6 +63,15 @@ struct MapHomeView: View {
             Spacer()
             pill {
                 Label(gpsText, systemImage: gpsSymbol).foregroundStyle(gpsColor)
+            }
+            Menu {
+                Button { showFeedback = true } label: { Label("Help & Feedback", systemImage: "questionmark.bubble") }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(.black.opacity(0.55), in: Circle())
             }
         }
         .padding(.top, 8)
@@ -180,22 +191,27 @@ struct MapHomeView: View {
         .padding(.trailing, 14)
     }
 
+    private var offlineID: String { "\(regions.active?.name ?? "")|\(basemap.rawValue)" }
+    private var offlineMap: OfflineMap? { offline.maps.first { $0.id == offlineID } }
+    private var isDownloadingActive: Bool { offline.downloadingID == offlineID }
+
     private var offlineButton: some View {
         Button {
-            if let r = regions.active, !offline.isDownloading {
-                offline.download(region: r, basemap: basemap)
+            if let r = regions.active, !isDownloadingActive {
+                offline.download(regionName: r.name, center: r.center, basemap: basemap)
             }
         } label: {
             ZStack {
                 Circle().fill(.black.opacity(0.55)).frame(width: 46, height: 46)
-                if offline.isDownloading {
-                    Circle().trim(from: 0, to: offline.progress)
+                if isDownloadingActive {
+                    Circle().trim(from: 0, to: offlineMap?.progress ?? 0.02)
                         .stroke(.cyan, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                         .frame(width: 38, height: 38).rotationEffect(.degrees(-90))
-                    Text("\(Int(offline.progress * 100))").font(.caption2.bold()).foregroundStyle(.white)
+                    Text("\(Int((offlineMap?.progress ?? 0) * 100))").font(.caption2.bold()).foregroundStyle(.white)
                 } else {
-                    Image(systemName: "arrow.down.circle")
-                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                    Image(systemName: offlineMap?.isComplete == true ? "checkmark.circle.fill" : "arrow.down.circle")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(offlineMap?.isComplete == true ? .green : .white)
                 }
             }
         }

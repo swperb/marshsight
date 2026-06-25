@@ -52,6 +52,23 @@ enum RegionStyle {
         return url
     }
 
+    /// A minimal style with only the basemap raster, used to define what tiles
+    /// an offline download should fetch. Overlays are local vector data and do
+    /// not need caching.
+    static func basemapStyleURL(_ basemap: Basemap) -> URL {
+        let style: [String: Any] = [
+            "version": 8,
+            "sources": ["usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16]],
+            "layers": [["id": "usgs", "type": "raster", "source": "usgs"]],
+        ]
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("basemap_\(basemap.rawValue).json")
+        if let data = try? JSONSerialization.data(withJSONObject: style) {
+            try? data.write(to: url, options: .atomic)
+        }
+        return url
+    }
+
     private static func build(region: LoadedRegion?, contributions: [MarkerFeature], basemap: Basemap) -> [String: Any] {
         let lands = region?.publicLands ?? []
         let landFC = featureCollection(lands.flatMap { land in

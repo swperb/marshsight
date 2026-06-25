@@ -70,10 +70,16 @@ final class RegionStore: ObservableObject {
     }
 
     /// Download every layer for a bounded region, simplify, persist, activate.
+    /// An empty `name` is resolved to the nearby place name (e.g. "Pelham").
     func download(name: String, center: CLLocationCoordinate2D, radiusKm: Double = 20) async {
         isWorking = true
-        status = "Downloading \(name)..."
         defer { isWorking = false }
+
+        let placemark = await reversePlacemark(center)
+        let resolvedName = name.isEmpty
+            ? (placemark?.locality ?? placemark?.subAdministrativeArea ?? placemark?.administrativeArea ?? "My Area")
+            : name
+        status = "Downloading \(resolvedName)..."
 
         async let g = try? await USGSWaterService.nearbyGauges(center: center, radiusKm: max(radiusKm, 40))
         async let r = try? await NHDService.riverLines(center: center, radiusKm: radiusKm, maxLines: 200)
@@ -88,7 +94,8 @@ final class RegionStore: ObservableObject {
         // Parcels are per-state and dense, so fetch them in a tighter radius
         // from whichever state we are in (if it publishes free parcel data).
         var parcels: [Parcel] = []
-        if let stateCode = await reverseStateCode(center), StateParcelService.hasCoverage(stateCode: stateCode) {
+        if let stateCode = StateParcelService.stateCode(from: placemark?.administrativeArea),
+           StateParcelService.hasCoverage(stateCode: stateCode) {
             status = "Downloading parcels..."
             parcels = (try? await StateParcelService.parcels(stateCode: stateCode, center: center)) ?? []
         }
@@ -104,7 +111,7 @@ final class RegionStore: ObservableObject {
         }
 
         let pack = RegionPack(
-            id: UUID().uuidString, name: name, savedAt: Date(),
+            id: UUID().uuidString, name: resolvedName, savedAt: Date(),
             centerLat: center.latitude, centerLon: center.longitude,
             gauges: gauges,
             riverLines: RegionPack.encode(lines: simpRivers),
@@ -150,11 +157,10 @@ final class RegionStore: ObservableObject {
         )
     }
 
-    /// Reverse geocode a coordinate to a two-letter US state code.
-    private func reverseStateCode(_ c: CLLocationCoordinate2D) async -> String? {
+    /// Reverse geocode a coordinate to a placemark (for naming + state lookup).
+    private func reversePlacemark(_ c: CLLocationCoordinate2D) async -> CLPlacemark? {
         let loc = CLLocation(latitude: c.latitude, longitude: c.longitude)
-        let placemarks = try? await CLGeocoder().reverseGeocodeLocation(loc)
-        return StateParcelService.stateCode(from: placemarks?.first?.administrativeArea)
+        return try? await CLGeocoder().reverseGeocodeLocation(loc).first
     }
 
     private func persist(_ pack: RegionPack) {

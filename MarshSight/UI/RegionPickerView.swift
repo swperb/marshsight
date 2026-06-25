@@ -7,7 +7,9 @@ import CoreLocation
 /// once: you choose a bounded area and only that area is fetched and rendered.
 struct RegionPickerView: View {
     @ObservedObject var store: RegionStore
+    @ObservedObject var offline: OfflineManager
     let currentLocation: CLLocationCoordinate2D?
+    var basemap: Basemap = .hybrid
     var allowDismiss: Bool = true
 
     @Environment(\.dismiss) private var dismiss
@@ -57,7 +59,7 @@ struct RegionPickerView: View {
                 if let here = currentLocation {
                     Section {
                         Button {
-                            Task { await store.download(name: "My Area", center: here) }
+                            Task { await store.download(name: "", center: here) }
                         } label: {
                             Label("Download my current area", systemImage: "location.fill")
                         }
@@ -66,25 +68,19 @@ struct RegionPickerView: View {
                 }
 
                 if !store.saved.isEmpty {
-                    Section("Downloaded regions") {
-                        ForEach(store.saved) { region in
-                            Button { store.activate(region.id); maybeDismiss() } label: {
-                                HStack {
-                                    Image(systemName: store.active?.id == region.id ? "checkmark.circle.fill" : "map")
-                                        .foregroundStyle(store.active?.id == region.id ? .green : .secondary)
-                                    Text(region.name)
-                                    Spacer()
-                                    Text(region.savedAt, style: .date)
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                        .onDelete { idx in idx.map { store.saved[$0].id }.forEach(store.delete) }
+                    Section {
+                        ForEach(store.saved) { region in regionRow(region) }
+                            .onDelete { idx in idx.map { store.saved[$0].id }.forEach(store.delete) }
+                    } header: {
+                        Text("Your regions")
+                    } footer: {
+                        Text("Each region's data (public land, water, parcels) is saved on your phone. Tap the cloud to also download its basemap tiles so the map works with no signal. Downloading again refreshes the tiles. Swipe a region to delete it.\(offline.totalMegabytes > 0 ? "\n\nOffline maps using \(sizeText(offline.totalMegabytes))." : "")")
                     }
                 }
             }
-            .navigationTitle("Choose a Region")
+            .navigationTitle("Regions & Offline Maps")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear { offline.reload() }
             .toolbar {
                 if allowDismiss {
                     ToolbarItem(placement: .cancellationAction) {
@@ -93,6 +89,53 @@ struct RegionPickerView: View {
                 }
             }
         }
+    }
+
+    private func regionRow(_ region: RegionSummary) -> some View {
+        let id = "\(region.name)|\(basemap.rawValue)"
+        let map = offline.maps.first { $0.id == id }
+        let downloading = offline.downloadingID == id
+        return HStack {
+            Button { store.activate(region.id); maybeDismiss() } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: store.active?.id == region.id ? "checkmark.circle.fill" : "map")
+                        .foregroundStyle(store.active?.id == region.id ? .green : .secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(region.name).foregroundStyle(.primary)
+                        if let map, map.isComplete {
+                            Label("Offline · \(sizeText(map.megabytes))", systemImage: "wifi.slash")
+                                .font(.caption2).foregroundStyle(.green)
+                        } else {
+                            Text(region.savedAt, style: .date).font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            Spacer()
+            if downloading {
+                HStack(spacing: 6) {
+                    ProgressView()
+                    Text("\(Int((map?.progress ?? 0) * 100))%").font(.caption).foregroundStyle(.secondary)
+                }
+            } else if let map, map.isComplete {
+                Button(role: .destructive) { offline.delete(map) } label: {
+                    Image(systemName: "trash")
+                }.buttonStyle(.borderless)
+            } else {
+                Button {
+                    offline.download(regionName: region.name,
+                                     center: CLLocationCoordinate2D(latitude: region.centerLat, longitude: region.centerLon),
+                                     basemap: basemap)
+                } label: {
+                    Image(systemName: "arrow.down.circle").font(.title3)
+                }.buttonStyle(.borderless)
+            }
+        }
+    }
+
+    private func sizeText(_ mb: Double) -> String {
+        mb < 1 ? String(format: "%.0f KB", mb * 1000) : String(format: "%.0f MB", mb)
     }
 
     private func runSearch() async {

@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var showRegionPicker = false
     @State private var showAR = false
     @AppStorage("acceptedSafetyDisclaimer") private var acceptedSafety = false
+    @AppStorage("basemap") private var basemap: Basemap = .hybrid
 
     // Cached "where am I" context, recomputed once per coordinate change.
     @State private var nearestGauge: WaterGauge?
@@ -29,7 +30,9 @@ struct ContentView: View {
                 permissionPrompt
             } else if regions.active == nil {
                 RegionPickerView(store: regions,
+                                 offline: offline,
                                  currentLocation: location.fix?.coordinate,
+                                 basemap: basemap,
                                  allowDismiss: false)
             } else if showAR {
                 // Swap to AR entirely (don't keep the home map rendering behind it).
@@ -65,6 +68,7 @@ struct ContentView: View {
                     contributions: contributions,
                     recorder: recorder,
                     offline: offline,
+                    basemap: $basemap,
                     nearestGauge: nearestGauge,
                     currentLand: currentLand,
                     currentParcel: currentParcel,
@@ -81,7 +85,10 @@ struct ContentView: View {
                 .presentationDetents([.medium, .large])
             }
             .sheet(isPresented: $showRegionPicker) {
-                RegionPickerView(store: regions, currentLocation: location.fix?.coordinate)
+                RegionPickerView(store: regions,
+                                 offline: offline,
+                                 currentLocation: location.fix?.coordinate,
+                                 basemap: basemap)
             }
     }
 
