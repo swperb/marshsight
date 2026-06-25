@@ -18,12 +18,15 @@ struct MapHomeView: View {
     var onReport: () -> Void
     var onSwitchRegion: () -> Void
 
+    @State private var recenterTick = 0
+
     var body: some View {
         ZStack {
             RegionMapView(region: regions.active,
                           track: location.track,
                           contributionMarkers: contributions.markers,
-                          interactive: true)
+                          interactive: true,
+                          recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
 
@@ -155,7 +158,7 @@ struct MapHomeView: View {
     private var sideButtons: some View {
         VStack(spacing: 12) {
             circleButton(icon: "plus", action: onReport)
-            circleButton(icon: "location.fill.viewfinder", action: {})
+            circleButton(icon: "location.fill.viewfinder") { recenterTick += 1 }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         .padding(.trailing, 14)

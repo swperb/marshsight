@@ -13,12 +13,15 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     let track: [CLLocationCoordinate2D]
     var contributionMarkers: [MarkerFeature] = []
     var interactive: Bool = true
+    /// Bump to recenter the map on the user (the home screen's locate button).
+    var recenterTick: Int = 0
 
     static func == (lhs: RegionMapView, rhs: RegionMapView) -> Bool {
         lhs.region == rhs.region
             && lhs.track.count == rhs.track.count
             && lhs.contributionMarkers.count == rhs.contributionMarkers.count
             && lhs.interactive == rhs.interactive
+            && lhs.recenterTick == rhs.recenterTick
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -55,11 +58,17 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         } else {
             coord.applyDynamicSources()
         }
+
+        if recenterTick != coord.lastRecenter {
+            coord.lastRecenter = recenterTick
+            uiView.userTrackingMode = .follow
+        }
     }
 
     final class Coordinator: NSObject, MLNMapViewDelegate {
         weak var map: MLNMapView?
         var lastToken = ""
+        var lastRecenter = 0
         var styleLoaded = false
         var region: LoadedRegion?
         var track: [CLLocationCoordinate2D] = []
