@@ -1,0 +1,14 @@
+{
+  "name": "Bear River Marsh - North Channel",
+  "features": [
+    { "id": "11111111-1111-1111-1111-111111111111", "kind": "launch", "name": "Boat Ramp", "latitude": 41.45000, "longitude": -112.27000 },
+    { "id": "22222222-2222-2222-2222-222222222201", "kind": "channelMarker", "name": "Daymark R2", "latitude": 41.45065, "longitude": -112.27060, "depthFeet": 5.5 },
+    { "id": "22222222-2222-2222-2222-222222222202", "kind": "channelMarker", "name": "Daymark R4", "latitude": 41.45130, "longitude": -112.27130, "depthFeet": 4.8 },
+    { "id": "33333333-3333-3333-3333-333333333301", "kind": "waypoint", "name": "Channel Bend", "latitude": 41.45200, "longitude": -112.27200, "depthFeet": 4.5 },
+    { "id": "44444444-4444-4444-4444-444444444401", "kind": "hazard", "name": "Stump Field", "latitude": 41.45160, "longitude": -112.27100, "depthFeet": 1.0 },
+    { "id": "44444444-4444-4444-4444-444444444402", "kind": "hazard", "name": "Sandbar", "latitude": 41.45235, "longitude": -112.27160, "depthFeet": 0.8 },
+    { "id": "22222222-2222-2222-2222-222222222203", "kind": "channelMarker", "name": "Daymark R6", "latitude": 41.45280, "longitude": -112.27260, "depthFeet": 3.9 },
+    { "id": "33333333-3333-3333-3333-333333333302", "kind": "waypoint", "name": "Open Pool", "latitude": 41.45350, "longitude": -112.27330, "depthFeet": 3.0 },
+    { "id": "55555555-5555-5555-5555-555555555501", "kind": "blind", "name": "North Blind", "latitude": 41.45370, "longitude": -112.27350 }
+  ]
+}

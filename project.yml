@@ -1,0 +1,48 @@
+name: MarshSight
+options:
+  bundleIdPrefix: com.marshsight
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: "V6A3J677QR"
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  MarshSight:
+    type: application
+    platform: iOS
+    sources:
+      - path: MarshSight
+    info:
+      path: MarshSight/Info.plist
+      properties:
+        CFBundleDisplayName: MarshSight
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiredDeviceCapabilities:
+          - arkit
+          - location-services
+          - gps
+          - magnetometer
+        NSCameraUsageDescription: "MarshSight uses the camera to overlay navigation markers, channel routes, and hazards onto your live view of the water."
+        NSLocationWhenInUseUsageDescription: "MarshSight uses your location and heading to place navigation waypoints and depth warnings in the real world around your boat."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "MarshSight uses your location to track your route and guide you back to the launch even when the screen is off."
+        NSMotionUsageDescription: "MarshSight uses motion sensors to stabilize the augmented reality overlay against your boat's movement."
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.marshsight.app
+        TARGETED_DEVICE_FAMILY: 1
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent

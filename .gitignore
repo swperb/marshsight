@@ -1,0 +1,22 @@
+# Xcode / build
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# XcodeGen generates this; keep project.yml as the source of truth.
+MarshSight.xcodeproj/
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+
+# Secrets / API keys (NOAA, Regrid, Mapbox tokens, etc.)
+Secrets.xcconfig
+*.env
