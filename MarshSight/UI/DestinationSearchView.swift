@@ -46,7 +46,7 @@ struct DestinationSearchView: View {
                 }
 
                 if !nearbySpots.isEmpty {
-                    Section("Saved spots (offline)") {
+                    Section("Community & saved spots (offline)") {
                         ForEach(nearbySpots) { spot in
                             Button { choose(name: spot.name, spot.coordinate) } label: {
                                 Label {
@@ -69,8 +69,10 @@ struct DestinationSearchView: View {
     }
 
     private var nearbySpots: [MarkerFeature] {
-        guard let c = center else { return spots }
-        return spots.sorted { GeoMath.distance($0.coordinate, c) < GeoMath.distance($1.coordinate, c) }
+        let q = query.trimmingCharacters(in: .whitespaces)
+        let matched = q.isEmpty ? spots : spots.filter { $0.name.localizedCaseInsensitiveContains(q) }
+        guard let c = center else { return matched }
+        return matched.sorted { GeoMath.distance($0.coordinate, c) < GeoMath.distance($1.coordinate, c) }
     }
 
     private func choose(name: String, _ coord: CLLocationCoordinate2D) {

@@ -128,10 +128,9 @@ enum RegionStyle {
         ]
     }
 
-    /// Trackline from the user to the destination (the blue "go there" line).
-    static func navGeoJSON(from: CLLocationCoordinate2D?, to: CLLocationCoordinate2D?) -> [String: Any] {
-        guard let from, let to else { return featureCollection([]) }
-        return featureCollection([lineString([from, to])])
+    /// The blue trackline through the planned path (user + remaining waypoints).
+    static func navLineGeoJSON(_ coords: [CLLocationCoordinate2D]) -> [String: Any] {
+        featureCollection(coords.count > 1 ? [lineString(coords)] : [])
     }
 
     /// The destination point marker.

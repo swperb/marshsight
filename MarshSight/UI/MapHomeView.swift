@@ -33,7 +33,7 @@ struct MapHomeView: View {
                           contributionMarkers: contributions.markers,
                           interactive: true,
                           basemap: basemap,
-                          destination: engine.destination?.coordinate,
+                          navPath: engine.remainingPath,
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -98,24 +98,41 @@ struct MapHomeView: View {
         .padding(.top, 8)
     }
 
-    private var navBanner: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "location.north.fill")
-                .font(.title3.weight(.bold)).foregroundStyle(.cyan)
-                .rotationEffect(.degrees(relativeBearing))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(engine.destination?.name ?? "Destination")
-                    .font(.headline).foregroundStyle(.white).lineLimit(1)
-                Text(navStats).font(.subheadline).foregroundStyle(.white.opacity(0.85)).monospacedDigit()
+    @ViewBuilder private var navBanner: some View {
+        if engine.arrived {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill").font(.title2).foregroundStyle(.green)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("You've arrived").font(.headline).foregroundStyle(.white)
+                    Text(engine.destination?.name ?? "").font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+                }
+                Spacer()
+                Button("Done") { engine.stopNavigating() }.buttonStyle(.borderedProminent).tint(.green)
             }
-            Spacer()
-            Button { engine.stopNavigating() } label: {
-                Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.white.opacity(0.8))
+            .padding(14)
+            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 18))
+            .padding(.bottom, 10)
+        } else {
+            HStack(spacing: 12) {
+                Image(systemName: "location.north.fill")
+                    .font(.title3.weight(.bold)).foregroundStyle(.cyan)
+                    .rotationEffect(.degrees(relativeBearing))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(engine.destination?.name ?? "Destination")
+                        .font(.headline).foregroundStyle(.white).lineLimit(1)
+                    Label(navStats, systemImage: engine.route.waypoints.count > 1 ? "water.waves" : "arrow.up.forward")
+                        .font(.subheadline).foregroundStyle(.white.opacity(0.85)).monospacedDigit()
+                }
+                Spacer()
+                Button { engine.stopNavigating() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.white.opacity(0.8))
+                }
             }
+            .padding(14)
+            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 18))
+            .padding(.bottom, 10)
         }
-        .padding(14)
-        .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 18))
-        .padding(.bottom, 10)
     }
 
     private var relativeBearing: Double {

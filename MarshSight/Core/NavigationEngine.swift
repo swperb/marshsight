@@ -10,25 +10,38 @@ final class NavigationEngine: ObservableObject {
     @Published var route: NavRoute
     @Published private(set) var guidance: Guidance = .empty
     @Published private(set) var destination: NavDestination?
+    @Published private(set) var arrived = false
 
     var isNavigating: Bool { destination != nil }
 
-    /// Point-to-point navigation to a single destination (a marina, a sandbar,
-    /// a crowd-sourced spot). The destination becomes the active waypoint, so
-    /// the steering arrow and trackline point straight to it.
-    func navigate(to dest: NavDestination) {
+    /// Navigate to a destination. `path` is the planned route (water-aware or a
+    /// straight line), ending at the destination. The next point on the path is
+    /// the active waypoint, so the arrow and trackline point along the route.
+    func navigate(to dest: NavDestination, path: [CLLocationCoordinate2D]) {
         destination = dest
-        route = NavRoute(name: dest.name, features: [
-            MarkerFeature(kind: .waypoint, name: dest.name,
-                          latitude: dest.latitude, longitude: dest.longitude)
-        ])
+        arrived = false
+        let points = path.isEmpty ? [dest.coordinate] : path
+        route = NavRoute(name: dest.name, features: points.enumerated().map { i, c in
+            MarkerFeature(kind: .waypoint,
+                          name: i == points.count - 1 ? dest.name : "Waypoint",
+                          latitude: c.latitude, longitude: c.longitude)
+        })
         resetToStart()
     }
 
     func stopNavigating() {
         destination = nil
+        arrived = false
         route = NavRoute(name: "", features: [])
         guidance = .empty
+    }
+
+    /// The remaining planned path from the active waypoint to the destination.
+    var remainingPath: [CLLocationCoordinate2D] {
+        guard isNavigating else { return [] }
+        let wps = route.waypoints
+        guard activeIndex < wps.count else { return [] }
+        return wps[activeIndex...].map { $0.coordinate }
     }
 
     /// How close, in meters, counts as "arrived" at a waypoint.
@@ -72,6 +85,11 @@ final class NavigationEngine: ObservableObject {
             if GeoMath.distance(here, target.coordinate) <= arrivalRadius {
                 activeIndex = min(activeIndex + 1, waypoints.count)
             }
+        }
+
+        // Arrived at the final destination.
+        if isNavigating, !waypoints.isEmpty, activeIndex >= waypoints.count, !arrived {
+            arrived = true
         }
 
         var g = Guidance.empty

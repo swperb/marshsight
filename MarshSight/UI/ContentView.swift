@@ -97,12 +97,20 @@ struct ContentView: View {
                 DestinationSearchView(
                     center: location.fix?.coordinate ?? regions.active?.center,
                     spots: (regions.active?.gaugeMarkers ?? []) + contributions.markers,
-                    onSelect: { engine.navigate(to: $0) })
+                    onSelect: startNavigation)
             }
     }
 
     private var isAuthorized: Bool {
         location.authorization == .authorizedWhenInUse || location.authorization == .authorizedAlways
+    }
+
+    /// Plan a water-aware route (or a straight line on land) and start navigating.
+    private func startNavigation(to dest: NavDestination) {
+        let start = location.fix?.coordinate ?? regions.active?.center ?? dest.coordinate
+        let path = WaterRouter.route(from: start, to: dest.coordinate, lakes: regions.active?.lakes ?? [])
+            ?? [dest.coordinate]
+        engine.navigate(to: dest, path: path)
     }
 
     private func updateContext(at c: CLLocationCoordinate2D) {

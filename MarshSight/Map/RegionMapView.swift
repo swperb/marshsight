@@ -14,7 +14,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     var contributionMarkers: [MarkerFeature] = []
     var interactive: Bool = true
     var basemap: Basemap = .hybrid
-    var destination: CLLocationCoordinate2D? = nil
+    var navPath: [CLLocationCoordinate2D] = []
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -24,8 +24,9 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             && lhs.contributionMarkers.count == rhs.contributionMarkers.count
             && lhs.interactive == rhs.interactive
             && lhs.basemap == rhs.basemap
-            && lhs.destination?.latitude == rhs.destination?.latitude
-            && lhs.destination?.longitude == rhs.destination?.longitude
+            && lhs.navPath.count == rhs.navPath.count
+            && lhs.navPath.last?.latitude == rhs.navPath.last?.latitude
+            && lhs.navPath.last?.longitude == rhs.navPath.last?.longitude
             && lhs.recenterTick == rhs.recenterTick
     }
 
@@ -57,7 +58,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.region = region
         coord.track = track
         coord.contributionMarkers = contributionMarkers
-        coord.destination = destination
+        coord.navPath = navPath
 
         if styleToken != coord.lastToken {
             coord.lastToken = styleToken
@@ -81,7 +82,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         var region: LoadedRegion?
         var track: [CLLocationCoordinate2D] = []
         var contributionMarkers: [MarkerFeature] = []
-        var destination: CLLocationCoordinate2D?
+        var navPath: [CLLocationCoordinate2D] = []
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             styleLoaded = true
@@ -99,13 +100,14 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             setShape(style, "track", RegionStyle.trackGeoJSON(track))
             let points = (region?.gaugeMarkers ?? []) + contributionMarkers
             setShape(style, "points", RegionStyle.pointsGeoJSON(points))
-            setShape(style, "dest", RegionStyle.destGeoJSON(destination))
+            setShape(style, "dest", RegionStyle.destGeoJSON(navPath.last))
             updateNavLine(map?.userLocation?.coordinate)
         }
 
         private func updateNavLine(_ user: CLLocationCoordinate2D?) {
             guard styleLoaded, let style = map?.style else { return }
-            setShape(style, "nav", RegionStyle.navGeoJSON(from: user, to: destination))
+            let line = (user != nil && !navPath.isEmpty) ? [user!] + navPath : []
+            setShape(style, "nav", RegionStyle.navLineGeoJSON(line))
         }
 
         private func setShape(_ style: MLNStyle, _ id: String, _ geojson: [String: Any]) {

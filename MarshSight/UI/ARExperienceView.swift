@@ -19,11 +19,13 @@ struct ARExperienceView: View {
     @State private var showReport = false
     @State private var showInset = false
 
-    /// AR shows local features only: your route and your own reports. Gauges
-    /// (often tens of miles away) live on the map and in the HUD banner, not as
-    /// giant floating labels in the camera.
+    /// AR shows local features only: the final destination and your own reports.
+    /// Intermediate route waypoints and far-away gauges stay off the camera.
     private var allFeatures: [MarkerFeature] {
-        engine.route.features + contributions.markers
+        let dest = engine.destination.map {
+            [MarkerFeature(kind: .waypoint, name: $0.name, latitude: $0.latitude, longitude: $0.longitude)]
+        } ?? []
+        return dest + contributions.markers
     }
 
     var body: some View {
@@ -32,7 +34,7 @@ struct ARExperienceView: View {
                       fix: location.fix,
                       publicLands: regions.active?.publicLands ?? [],
                       regionToken: regions.active?.id ?? "",
-                      destination: engine.destination?.coordinate)
+                      destination: engine.guidance.activeWaypoint?.coordinate)
                 .ignoresSafeArea()
 
             HUDOverlay(guidance: engine.guidance,
@@ -49,7 +51,8 @@ struct ARExperienceView: View {
                 RegionMapView(region: regions.active,
                               track: location.track,
                               contributionMarkers: contributions.markers,
-                              interactive: false)
+                              interactive: false,
+                              navPath: engine.remainingPath)
                     .equatable()
                     .frame(width: 130, height: 130)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
