@@ -7,15 +7,18 @@ attorney review the data pipeline before shipping parcel data in any release.
 
 Current state of the repository:
 
-- **iOS app and SDKs:** Apache-2.0 (`LICENSE`).
+- **iOS app:** MPL-2.0 (`LICENSE`).
 - **Platform server:** AGPL-3.0 (`platform/api/LICENSE`), so hosted forks stay open.
+- **Standalone pipeline tooling:** MIT (when added).
 - **Aggregated / contributed map data:** intended for ODbL (open data).
 
-> Open decision: the project handoff recommends GPL-3.0 for the app and MIT for
-> standalone pipeline tooling. The current app license is Apache-2.0. This is a
-> deliberate, reversible choice to confirm with the owner before first release.
-> AGPL on the server already matches the handoff's intent that hosted forks stay
-> open.
+> Why MPL-2.0 for the app rather than the handoff's GPL-3.0: GPL conflicts with
+> App Store distribution (Apple's terms impose usage restrictions that clash with
+> GPL's "no further restrictions" clause; GPL apps have been removed from the App
+> Store over this). MPL-2.0 keeps file-level copyleft, so a competitor cannot
+> take the core and close it, while remaining App Store compatible and easy to
+> build on. AGPL on the server matches the handoff's intent that hosted forks
+> stay open.
 
 ## Data rights
 

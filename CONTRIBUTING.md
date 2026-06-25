@@ -6,7 +6,7 @@ built on public data, instead of a closed subscription.
 
 ## Repository layout
 
-- `MarshSight/` - the iOS app (SwiftUI + ARKit/RealityKit). Apache-2.0.
+- `MarshSight/` - the iOS app (SwiftUI + ARKit/RealityKit). MPL-2.0.
 - `platform/api/` - the data + contribution platform API (Node + TypeScript).
   AGPL-3.0, so hosted forks stay open.
 - `web/` - the marketing and waitlist site (Next.js).
@@ -44,5 +44,5 @@ built on public data, instead of a closed subscription.
 - Field testing and bug reports from real hunts and outings.
 
 By contributing, you agree your code is licensed under the repository's license
-(Apache-2.0 for the app and SDK, AGPL-3.0 for the server) and that contributed
+(MPL-2.0 for the app, AGPL-3.0 for the server) and that contributed
 map data may be published under an open data license (ODbL).

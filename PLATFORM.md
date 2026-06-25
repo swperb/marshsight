@@ -93,7 +93,7 @@ is genuinely public and free.
 
 ## Licensing
 
-- Code: Apache-2.0 for SDKs and clients; AGPL-3.0 for server components so
+- Code: MPL-2.0 for the app and SDKs; AGPL-3.0 for server components so
   hosted forks stay open.
 - Data: ODbL for the contributed/aggregated database (attribution + share-alike).
 - Public-domain government layers are passed through with source credit.

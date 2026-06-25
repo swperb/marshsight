@@ -5,6 +5,11 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
 
+packages:
+  MapLibre:
+    url: https://github.com/maplibre/maplibre-gl-native-distribution
+    from: "6.0.0"
+
 settings:
   base:
     MARKETING_VERSION: "0.1.0"
@@ -18,6 +23,8 @@ targets:
   MarshSight:
     type: application
     platform: iOS
+    dependencies:
+      - package: MapLibre
     sources:
       - path: MarshSight
     info:

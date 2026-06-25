@@ -1,19 +1,18 @@
 import SwiftUI
-import MapKit
+import MapLibre
+import CoreLocation
 
-/// The region map, used full-screen on the home screen and as a small inset in
-/// AR. It is `Equatable` on the region identity and breadcrumb length, so
-/// SwiftUI skips re-rendering it on every GPS fix; it only redraws when the
-/// region changes or the track grows. Geometry is simplified at download time,
-/// so overlays are light.
-struct RegionMapView: View, Equatable {
+/// The region map, rendered with MapLibre GL Native over a public-domain USGS
+/// basemap (free, cacheable, and the path to true offline maps). Used full-screen
+/// on the home screen and as a small inset in AR. Equatable so SwiftUI skips it
+/// on every GPS fix; the basemap style is rebuilt only when the region changes,
+/// while the track and points are updated at runtime without a reload.
+struct RegionMapView: UIViewRepresentable, Equatable {
 
     let region: LoadedRegion?
     let track: [CLLocationCoordinate2D]
     var contributionMarkers: [MarkerFeature] = []
     var interactive: Bool = true
-
-    @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
 
     static func == (lhs: RegionMapView, rhs: RegionMapView) -> Bool {
         lhs.region == rhs.region
@@ -22,58 +21,69 @@ struct RegionMapView: View, Equatable {
             && lhs.interactive == rhs.interactive
     }
 
-    var body: some View {
-        Map(position: $camera, interactionModes: interactive ? .all : []) {
-            if let region {
-                ForEach(region.parcels) { parcel in
-                    ForEach(Array(parcel.rings.enumerated()), id: \.offset) { _, ring in
-                        if ring.count > 2 {
-                            MapPolygon(coordinates: ring)
-                                .foregroundStyle(.clear)
-                                .stroke(.orange.opacity(0.55), lineWidth: 0.7)
-                        }
-                    }
-                }
-                ForEach(Array(region.lakes.enumerated()), id: \.offset) { _, ring in
-                    if ring.count > 2 {
-                        MapPolygon(coordinates: ring)
-                            .foregroundStyle(.blue.opacity(0.35))
-                            .stroke(.blue, lineWidth: 1)
-                    }
-                }
-                ForEach(region.publicLands) { land in
-                    ForEach(Array(land.rings.enumerated()), id: \.offset) { _, ring in
-                        if ring.count > 2 {
-                            MapPolygon(coordinates: ring)
-                                .foregroundStyle(land.access.color.opacity(0.22))
-                                .stroke(land.access.color, lineWidth: 1.5)
-                        }
-                    }
-                }
-                ForEach(Array(region.riverLines.enumerated()), id: \.offset) { _, line in
-                    if line.count > 1 {
-                        MapPolyline(coordinates: line).stroke(.blue.opacity(0.7), lineWidth: 2)
-                    }
-                }
-            }
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
-            if track.count > 1 {
-                MapPolyline(coordinates: track).stroke(.yellow.opacity(0.9), lineWidth: 2)
-            }
-
-            ForEach((region?.gaugeMarkers ?? []) + contributionMarkers) { feature in
-                Annotation(feature.name, coordinate: feature.coordinate) {
-                    Image(systemName: feature.kind.symbol)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(5)
-                        .background(feature.kind.tint, in: Circle())
-                        .overlay(Circle().stroke(.white, lineWidth: 1))
-                }
-            }
-
-            UserAnnotation()
+    func makeUIView(context: Context) -> MLNMapView {
+        let map = MLNMapView(frame: .zero)
+        map.delegate = context.coordinator
+        map.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers)
+        map.showsUserLocation = true
+        map.userTrackingMode = .follow
+        map.allowsScrolling = interactive
+        map.allowsZooming = interactive
+        map.allowsRotating = interactive
+        map.allowsTilting = interactive
+        if let c = region?.center {
+            map.setCenter(c, zoomLevel: 13, animated: false)
         }
-        .mapStyle(.imagery(elevation: .flat))
+        context.coordinator.map = map
+        context.coordinator.lastToken = region?.id ?? "empty"
+        return map
+    }
+
+    func updateUIView(_ uiView: MLNMapView, context: Context) {
+        let coord = context.coordinator
+        coord.region = region
+        coord.track = track
+        coord.contributionMarkers = contributionMarkers
+
+        let token = region?.id ?? "empty"
+        if token != coord.lastToken {
+            coord.lastToken = token
+            coord.styleLoaded = false
+            uiView.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers)
+        } else {
+            coord.applyDynamicSources()
+        }
+    }
+
+    final class Coordinator: NSObject, MLNMapViewDelegate {
+        weak var map: MLNMapView?
+        var lastToken = ""
+        var styleLoaded = false
+        var region: LoadedRegion?
+        var track: [CLLocationCoordinate2D] = []
+        var contributionMarkers: [MarkerFeature] = []
+
+        func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
+            styleLoaded = true
+            applyDynamicSources()
+        }
+
+        /// Update the track and points sources in place (no style reload).
+        func applyDynamicSources() {
+            guard styleLoaded, let style = map?.style else { return }
+            setShape(style, "track", RegionStyle.trackGeoJSON(track))
+            let points = (region?.gaugeMarkers ?? []) + contributionMarkers
+            setShape(style, "points", RegionStyle.pointsGeoJSON(points))
+        }
+
+        private func setShape(_ style: MLNStyle, _ id: String, _ geojson: [String: Any]) {
+            guard let src = style.source(withIdentifier: id) as? MLNShapeSource,
+                  let data = try? JSONSerialization.data(withJSONObject: geojson),
+                  let shape = try? MLNShape(data: data, encoding: String.Encoding.utf8.rawValue)
+            else { return }
+            src.shape = shape
+        }
     }
 }
