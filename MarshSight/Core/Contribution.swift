@@ -52,6 +52,18 @@ struct Contribution: Identifiable, Codable, Equatable {
     var visibility: Visibility
     var createdAt: Date
 
+    // Community review. Optional so older saved data still decodes.
+    var upvotes: Int?
+    var downvotes: Int?
+    var status: String?     // "pending" until the community verifies it
+    var myVote: Int?        // this device's vote: +1, -1, or nil
+
+    var score: Int { (upvotes ?? 0) - (downvotes ?? 0) }
+
+    /// A spot is community-verified once it clears the vote threshold.
+    var isVerified: Bool { (status ?? "pending") == "verified" || score >= Contribution.verifyThreshold }
+    static let verifyThreshold = 3
+
     var coordinate: CLLocationCoordinate2D { .init(latitude: latitude, longitude: longitude) }
 
     func asMarkerFeature() -> MarkerFeature {
@@ -101,6 +113,41 @@ final class ContributionStore: ObservableObject {
         Task { await sync(c) }
     }
 
+    /// Save a named place from search as a public community spot. It starts as
+    /// pending and becomes verified once the community upvotes it.
+    func saveSpot(name: String, at coordinate: CLLocationCoordinate2D) {
+        add(kind: .waypoint, name: name, note: nil, at: coordinate, visibility: .public)
+    }
+
+    /// Cast or toggle a vote on a spot. Updates locally and posts to the server.
+    func vote(_ spot: Contribution, _ delta: Int) {
+        guard let i = contributions.firstIndex(where: { $0.id == spot.id }) else { return }
+        var c = contributions[i]
+        let prev = c.myVote ?? 0
+        if prev == 1 { c.upvotes = max(0, (c.upvotes ?? 0) - 1) }
+        if prev == -1 { c.downvotes = max(0, (c.downvotes ?? 0) - 1) }
+        let newVote = (prev == delta) ? 0 : delta
+        if newVote == 1 { c.upvotes = (c.upvotes ?? 0) + 1 }
+        if newVote == -1 { c.downvotes = (c.downvotes ?? 0) + 1 }
+        c.myVote = newVote == 0 ? nil : newVote
+        if (c.status ?? "pending") != "verified", c.score >= Contribution.verifyThreshold { c.status = "verified" }
+        contributions[i] = c
+        save()
+        Task { await postVote(spotID: spot.id, value: newVote) }
+    }
+
+    private func postVote(spotID: String, value: Int) async {
+        guard !PlatformAPI.baseURL.isEmpty,
+              let url = URL(string: "\(PlatformAPI.baseURL)/v1/votes") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "contributionId": spotID, "deviceId": deviceId, "value": value
+        ])
+        _ = try? await URLSession.shared.data(for: req)
+    }
+
     // MARK: - Persistence
 
     private func load() {
@@ -132,8 +179,9 @@ final class ContributionStore: ObservableObject {
     }
 }
 
-/// Platform API configuration. Empty base URL means local-only (no server yet);
-/// set this to the deployed API host to enable sync.
+/// Platform API configuration. Spots, votes, and the waitlist sync here once the
+/// DNS for this host resolves and the schema is applied; calls fail gracefully
+/// until then.
 enum PlatformAPI {
-    static let baseURL = ""   // e.g. "https://api.marshsight.app"
+    static let baseURL = "https://api.marshsight.com"
 }

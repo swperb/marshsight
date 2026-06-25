@@ -10,7 +10,7 @@ import { cached, cacheKey } from "./cache";
 import { fetchGauges } from "./sources/usgs";
 import { fetchRivers, fetchLakes } from "./sources/nhd";
 import { fetchPublicLands } from "./sources/padus";
-import { addContribution, nearbyContributions, addWaitlistEmail, Contribution } from "./store";
+import { addContribution, nearbyContributions, addWaitlistEmail, vote as castVote, Contribution } from "./store";
 import { randomUUID } from "node:crypto";
 
 const app = express();
@@ -132,6 +132,15 @@ app.get("/v1/contributions", asyncRoute(async (req, res) => {
   res.json({ center: { lat, lon }, radiusKm, contributions: items });
 }));
 
+app.post("/v1/votes", asyncRoute(async (req, res) => {
+  const b = req.body ?? {};
+  const value = Number(b.value);
+  if (!b.contributionId || !b.deviceId) throw new BadRequest("contributionId and deviceId required");
+  if (![-1, 0, 1].includes(value)) throw new BadRequest("value must be -1, 0, or 1");
+  await castVote(String(b.contributionId), String(b.deviceId), value);
+  res.json({ ok: true });
+}));
+
 app.post("/v1/waitlist", asyncRoute(async (req, res) => {
   const email = String(req.body?.email ?? "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new BadRequest("valid email required");
@@ -147,9 +156,14 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(502).json({ error: message });
 });
 
-app.listen(PORT, () => {
-  console.log(`Open Outdoors Platform API listening on http://localhost:${PORT}`);
-});
+// Run a local server only when invoked directly (not on Vercel serverless).
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Open Outdoors Platform API listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
 
 /** Wrap an async route so thrown errors reach the error handler. */
 function asyncRoute(

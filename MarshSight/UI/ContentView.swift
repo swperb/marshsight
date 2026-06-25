@@ -96,7 +96,8 @@ struct ContentView: View {
             .sheet(isPresented: $showDestinationSearch) {
                 DestinationSearchView(
                     center: location.fix?.coordinate ?? regions.active?.center,
-                    spots: (regions.active?.gaugeMarkers ?? []) + contributions.markers,
+                    contributions: contributions,
+                    extraSpots: regions.active?.gaugeMarkers ?? [],
                     onSelect: startNavigation)
             }
     }

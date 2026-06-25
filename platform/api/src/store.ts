@@ -23,6 +23,14 @@ export interface Contribution {
   visibility: "private" | "group" | "public";
   createdAt: string;
   deviceId?: string;   // anonymous author handle for now
+  upvotes?: number;
+  downvotes?: number;
+  status?: string;     // pending | verified | rejected
+}
+
+/// Cast or change a vote; delegated to Supabase when configured.
+export async function vote(contributionId: string, deviceId: string, value: number): Promise<void> {
+  if (supa.supabaseEnabled()) return supa.vote(contributionId, deviceId, value);
 }
 
 async function ensureDir(file: string) {

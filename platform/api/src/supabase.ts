@@ -41,7 +41,7 @@ export async function nearbyContributions(
 ): Promise<Contribution[]> {
   const dDeg = radiusKm / 111;
   const params = new URLSearchParams();
-  params.set("select", "id,kind,name,note,lat,lon,visibility,device_id,created_at");
+  params.set("select", "id,kind,name,note,lat,lon,visibility,device_id,created_at,upvotes,downvotes,status");
   params.append("lat", `gte.${lat - dDeg}`);
   params.append("lat", `lte.${lat + dDeg}`);
   params.append("lon", `gte.${lon - dDeg}`);
@@ -60,7 +60,26 @@ export async function nearbyContributions(
     id: r.id, kind: r.kind, name: r.name, note: r.note ?? undefined,
     lat: r.lat, lon: r.lon, visibility: r.visibility,
     createdAt: r.created_at, deviceId: r.device_id ?? undefined,
+    upvotes: r.upvotes ?? 0, downvotes: r.downvotes ?? 0, status: r.status ?? "pending",
   }));
+}
+
+/// Upsert a vote, then recompute the contribution's tallies and status.
+export async function vote(contributionId: string, deviceId: string, value: number): Promise<void> {
+  const up = await fetch(`${urlBase()}/rest/v1/votes?on_conflict=contribution_id,device_id`, {
+    method: "POST",
+    headers: headers({ Prefer: "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify({ contribution_id: contributionId, device_id: deviceId, value }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!up.ok) throw new Error(`supabase vote ${up.status}: ${await up.text()}`);
+  const rc = await fetch(`${urlBase()}/rest/v1/rpc/recompute_votes`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ cid: contributionId }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!rc.ok) throw new Error(`supabase recompute ${rc.status}`);
 }
 
 export async function addWaitlistEmail(email: string): Promise<void> {
