@@ -46,6 +46,7 @@ struct MapHomeView: View {
     @State private var showFeed = false
     @State private var showCameras = false
     @AppStorage("camInboxCode") private var camCode = ""
+    @AppStorage("seenMapCoach") private var seenMapCoach = false
     @State private var selectedMarker: SelectedMarker?
     @State private var drivePreview: NavDestination?
     @State private var mapCenter: CLLocationCoordinate2D?
@@ -119,6 +120,11 @@ struct MapHomeView: View {
         .sheet(isPresented: $showConnections) { ConnectionsView() }
         .sheet(isPresented: $showFeed) { FeedView(store: feed) }
         .sheet(isPresented: $showCameras) { CamerasView(code: camCode) }
+        .overlay {
+            if !seenMapCoach, regions.active != nil {
+                CoachOverlay { seenMapCoach = true }.transition(.opacity)
+            }
+        }
         .sheet(item: $drivePreview) { dest in
             DrivePreviewView(destination: dest, origin: location.fix?.coordinate)
         }

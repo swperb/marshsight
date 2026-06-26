@@ -44,13 +44,16 @@ struct PaywallView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Image(systemName: "scope")
                 .font(.system(size: 50)).foregroundStyle(.cyan)
-            Text("Support the open alternative")
+            Text("Back the open alternative")
                 .font(.title2.weight(.bold)).multilineTextAlignment(.center)
-            Text("Free for hunters and anglers, owned by no one. Go further with MarshSight+.")
+            Text("Everything's unlocked and free during the beta. MarshSight+ is how you keep the map free for everyone and fund the layers below as they roll out.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Label("Beta: every feature is on right now — no wall", systemImage: "lock.open.fill")
+                .font(.caption.weight(.semibold)).foregroundStyle(.green)
+                .padding(.top, 2)
         }
     }
 
