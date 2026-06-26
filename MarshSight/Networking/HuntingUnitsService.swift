@@ -53,7 +53,27 @@ enum HuntingUnitsService {
             nameField: "NAME", kind: "WMA"),
         "MO": Source(
             url: "https://services2.arcgis.com/kNS2ppBA4rwAQQZy/arcgis/rest/services/MO_Missouri_Department_of_Conservation_Lands/FeatureServer/0/query",
-            nameField: "Area_Name", kind: "Conservation Area")
+            nameField: "Area_Name", kind: "Conservation Area"),
+        // TN: TWRA hunting-allowed lands (WMAs and refuges).
+        "TN": Source(
+            url: "https://services3.arcgis.com/PWXNAH2YKmZY7lBq/arcgis/rest/services/Hunting_Allowed/FeatureServer/0/query",
+            nameField: "NAME", kind: "Hunting Land"),
+        // GA: Georgia DNR Wildlife Resources Division WMA boundaries (layer 14).
+        "GA": Source(
+            url: "https://services6.arcgis.com/9QlSLDqa0P1cHLhu/arcgis/rest/services/WRD_WMA_Public/FeatureServer/14/query",
+            nameField: "PropName", kind: "WMA"),
+        // FL: FWC official Wildlife Management Areas.
+        "FL": Source(
+            url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/Wildlife_Management_Areas_Florida/MapServer/1/query",
+            nameField: "NAME", kind: "WMA"),
+        // TX: TPWD Wildlife Management Areas for public distribution.
+        "TX": Source(
+            url: "https://services1.arcgis.com/1mtXwieMId59thmg/arcgis/rest/services/WMA_Boundaries_4PublicDistribution/FeatureServer/0/query",
+            nameField: "LoName", kind: "WMA"),
+        // OK: ODWC public WMA boundaries.
+        "OK": Source(
+            url: "https://services1.arcgis.com/jRf8jjFwxedITdFe/arcgis/rest/services/Public_WMA_Boundaries/FeatureServer/1/query",
+            nameField: "WMANAME", kind: "WMA")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
