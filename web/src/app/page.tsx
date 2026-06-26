@@ -297,15 +297,15 @@ export default function Home() {
             <div className="rounded-2xl border-2 border-pine-700 bg-white p-8 shadow-sm">
               <div className="flex items-baseline justify-between">
                 <h3 className="font-serif text-2xl font-medium text-ink-900">MarshSight+</h3>
-                <span className="rounded-full bg-pine-700/10 px-3 py-1 text-xs font-medium text-pine-700">
-                  Supports the project
+                <span className="rounded-full bg-clay-600/15 px-3 py-1 text-xs font-semibold text-clay-600">
+                  Founding Member · first 100
                 </span>
               </div>
               <p className="mt-1 text-3xl font-semibold text-ink-900">
                 $24.99<span className="text-base font-normal text-ink-500">/yr</span>
               </p>
               <p className="mt-2 text-sm text-ink-500">
-                or $99 once for a Founder lifetime license.
+                or a one-time <strong className="text-ink-700">$99 Founder lifetime</strong> — limited to the first 100.
               </p>
               <ul className="mt-6 space-y-3 text-sm text-ink-700">
                 {[
@@ -323,8 +323,8 @@ export default function Home() {
                 ))}
               </ul>
               <p className="mt-6 text-xs leading-relaxed text-ink-400">
-                Free during the open beta — every feature is unlocked while we
-                build. MarshSight+ goes live in the App Store version.
+                The first 100 Founders lock in lifetime access and fund the open
+                map. The core stays free for everyone, forever.
               </p>
             </div>
           </div>
