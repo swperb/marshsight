@@ -3,6 +3,32 @@ import RealityKit
 import ARKit
 import CoreLocation
 import Combine
+import os
+
+/// Live AR diagnostics, mirrored to os_log (readable over the wire with
+/// `log stream`/Console) and to an on-screen debug HUD. Enable with the
+/// "ARDEBUG" launch argument or by setting the "arDebug" default.
+final class ARDebugStats: ObservableObject {
+    static let shared = ARDebugStats()
+    static let log = Logger(subsystem: "com.marshsight.app", category: "ar")
+    @Published var tracking = "starting"
+    @Published var markers = 0
+    @Published var boundaries = 0
+    @Published var fps = 0
+    @Published var note = ""
+
+    static var enabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("ARDEBUG")
+            || UserDefaults.standard.bool(forKey: "arDebug")
+    }
+
+    /// AR delegate callbacks arrive off the main thread; hop to main so SwiftUI
+    /// and @Published stay happy.
+    func set(_ apply: @escaping (ARDebugStats) -> Void) {
+        if Thread.isMainThread { apply(self) }
+        else { DispatchQueue.main.async { apply(self) } }
+    }
+}
 
 /// SwiftUI wrapper around a RealityKit ARView that draws navigation markers
 /// floating in the real world. The trick that makes this work off-grid: we run
@@ -37,7 +63,9 @@ struct ARNavView: UIViewRepresentable {
         config.planeDetection = []
         config.environmentTexturing = .none
         config.frameSemantics = []
+        arView.session.delegate = context.coordinator
         arView.session.run(config)
+        ARDebugStats.log.info("AR session started (gravityAndHeading)")
 
         let root = AnchorEntity(world: .zero)
         arView.scene.addAnchor(root)
@@ -65,10 +93,48 @@ struct ARNavView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    final class Coordinator {
+    final class Coordinator: NSObject, ARSessionDelegate {
         var arView: ARView?
         var root: AnchorEntity?
         var updateSub: Cancellable?
+        private var fpsWindowStart = CACurrentMediaTime()
+        private var fpsCount = 0
+
+        // MARK: ARSessionDelegate
+
+        func session(_ session: ARSession, cameraDidChangeTrackingState camera: ARCamera) {
+            let desc: String
+            switch camera.trackingState {
+            case .normal: desc = "normal"
+            case .notAvailable: desc = "not available"
+            case .limited(let reason):
+                switch reason {
+                case .initializing: desc = "limited: initializing"
+                case .excessiveMotion: desc = "limited: too much motion"
+                case .insufficientFeatures: desc = "limited: low detail / glare"
+                case .relocalizing: desc = "limited: relocalizing"
+                @unknown default: desc = "limited"
+                }
+            @unknown default: desc = "unknown"
+            }
+            ARDebugStats.log.info("tracking: \(desc, privacy: .public)")
+            ARDebugStats.shared.set { $0.tracking = desc }
+        }
+
+        func session(_ session: ARSession, didFailWithError error: Error) {
+            ARDebugStats.log.error("session failed: \(error.localizedDescription, privacy: .public)")
+            ARDebugStats.shared.set { $0.note = "error: \(error.localizedDescription)" }
+        }
+
+        func sessionWasInterrupted(_ session: ARSession) {
+            ARDebugStats.log.notice("session interrupted")
+            ARDebugStats.shared.set { $0.note = "interrupted" }
+        }
+
+        func sessionInterruptionEnded(_ session: ARSession) {
+            ARDebugStats.log.notice("session resumed")
+            ARDebugStats.shared.set { $0.note = "" }
+        }
 
         private var entities: [UUID: MarkerEntity] = [:]
         private var boundaries: [Int: BoundaryEntity] = [:]
@@ -130,6 +196,7 @@ struct ARNavView: UIViewRepresentable {
                     entities[feature.id] = marker
                 }
             }
+            let m = entities.count; ARDebugStats.shared.set { $0.markers = m }
         }
 
         /// Rebuild boundary lines only when the region changes or we move far
@@ -162,6 +229,7 @@ struct ARNavView: UIViewRepresentable {
             }
             lastBoundaryOrigin = origin
             lastRegionToken = regionToken
+            let b = boundaries.count; ARDebugStats.shared.set { $0.boundaries = b }
         }
 
         /// Draw a blue trackline on the water from the user toward the
@@ -193,6 +261,13 @@ struct ARNavView: UIViewRepresentable {
         /// this, distant markers shrink to unreadable specks. ~10 fps.
         func tickBillboard() {
             frame &+= 1
+            fpsCount += 1
+            let now = CACurrentMediaTime()
+            if now - fpsWindowStart >= 1.0 {
+                let f = fpsCount
+                ARDebugStats.shared.set { $0.fps = f }
+                fpsCount = 0; fpsWindowStart = now
+            }
             guard frame % 6 == 0, let arView else { return }
             let cam = arView.cameraTransform.translation
             for entity in entities.values {
@@ -203,5 +278,24 @@ struct ARNavView: UIViewRepresentable {
                 entity.scale = SIMD3(repeating: min(7, max(1.0, d / 22)))
             }
         }
+    }
+}
+
+/// On-screen AR diagnostics (tracking state, fps, marker counts). Shown only
+/// when ARDebugStats.enabled. Reads the same data mirrored to os_log.
+struct ARDebugHUD: View {
+    @ObservedObject private var stats = ARDebugStats.shared
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("AR DEBUG").font(.caption2.bold())
+            Text("track: \(stats.tracking)")
+            Text("fps \(stats.fps)  ·  markers \(stats.markers)  ·  bounds \(stats.boundaries)")
+            if !stats.note.isEmpty { Text(stats.note).foregroundStyle(.orange) }
+        }
+        .font(.system(.caption2, design: .monospaced))
+        .foregroundStyle(.white)
+        .padding(8)
+        .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityHidden(true)
     }
 }

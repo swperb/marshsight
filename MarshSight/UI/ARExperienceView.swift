@@ -47,6 +47,12 @@ struct ARExperienceView: View {
 
             topControls
 
+            if ARDebugStats.enabled {
+                ARDebugHUD()
+                    .padding(.top, 96).padding(.leading, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+
             if showInset {
                 RegionMapView(region: regions.active,
                               track: location.track,
