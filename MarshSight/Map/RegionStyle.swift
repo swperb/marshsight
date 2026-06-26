@@ -97,6 +97,9 @@ enum RegionStyle {
                 // WMS-style: MapLibre substitutes the tile bbox. Online-only overlay.
                 "slope": ["type": "raster", "tileSize": 256, "tiles": [
                     "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule=%7B%22rasterFunction%22%3A%22Slope%20Map%22%7D"]],
+                // NEXRAD base reflectivity (Iowa Mesonet, latest frame, free, no key).
+                "radar": ["type": "raster", "tileSize": 256, "tiles": [
+                    "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png"]],
                 "lands": geojsonSource(landFC),
                 "parcels": geojsonSource(parcelFC),
                 "units": geojsonSource(unitFC),
@@ -115,6 +118,9 @@ enum RegionStyle {
                 ["id": "slope-raster", "type": "raster", "source": "slope",
                  "layout": ["visibility": "none"],
                  "paint": ["raster-opacity": 0.5]],
+                ["id": "radar-raster", "type": "raster", "source": "radar",
+                 "layout": ["visibility": "none"],
+                 "paint": ["raster-opacity": 0.6]],
                 ["id": "lakes-fill", "type": "fill", "source": "lakes",
                  "paint": ["fill-color": "#3B82F6", "fill-opacity": 0.3]],
                 ["id": "lakes-line", "type": "line", "source": "lakes",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Zilla_Slab, Caveat } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +12,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const zillaSlab = Zilla_Slab({
+  variable: "--font-zilla-slab",
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
+  weight: ["600", "700"],
+  subsets: ["latin"],
+});
+
 const SITE_TITLE =
   "MarshSight: Free, open-source AR navigation for hunters and anglers";
 const SITE_DESCRIPTION =
-  "MarshSight overlays public-land boundaries, river channels, live water levels, and hazards onto your live camera view. Free and open source.";
+  "MarshSight overlays public-land boundaries, river channels, live water levels, and hazards onto your live camera view. Free and open source, built on public government data.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://marshsight.com"),
@@ -44,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${zillaSlab.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

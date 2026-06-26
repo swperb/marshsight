@@ -8,6 +8,7 @@ struct ContentView: View {
     @StateObject private var regions = RegionStore()
     @StateObject private var contributions = ContributionStore()
     @StateObject private var weather = WeatherStore()
+    @StateObject private var tides = TideStore()
     @StateObject private var recorder = TrackRecorder()
     @StateObject private var offline = OfflineManager()
 
@@ -61,6 +62,7 @@ struct ContentView: View {
             updateContext(at: f.coordinate)
             recorder.record(f)
             Task { await weather.refreshIfStale(at: f.coordinate) }
+            Task { await tides.refreshIfStale(at: f.coordinate) }
             Task { await contributions.fetchNearby(f.coordinate) }
         }
         .onChange(of: regions.active) { _, _ in
@@ -81,6 +83,7 @@ struct ContentView: View {
                     currentParcel: currentParcel,
                     currentUnit: currentUnit,
                     weather: weather.weather,
+                    tides: tides,
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true },

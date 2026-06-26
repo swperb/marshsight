@@ -18,6 +18,7 @@ struct MapHomeView: View {
     let currentParcel: Parcel?
     let currentUnit: HuntingUnit?
     let weather: Weather?
+    @ObservedObject var tides: TideStore
 
     var onEnterAR: () -> Void
     var onReport: () -> Void
@@ -40,10 +41,12 @@ struct MapHomeView: View {
     @AppStorage("layer.trails") private var showTrails = true
     @AppStorage("layer.slope") private var showSlope = false
     @AppStorage("layer.scent") private var showScent = false
+    @AppStorage("layer.radar") private var showRadar = false
 
     private var layerVisibility: LayerVisibility {
         .init(land: showLand, units: showUnits, parcels: showParcels,
-              water: showWater, trails: showTrails, slope: showSlope, scent: showScent)
+              water: showWater, trails: showTrails, slope: showSlope,
+              scent: showScent, radar: showRadar)
     }
 
     var body: some View {
@@ -64,6 +67,7 @@ struct MapHomeView: View {
             VStack(spacing: 0) {
                 topBar
                 if weather != nil { weatherStrip }
+                if let t = tides.next { tideStrip(t) }
                 searchBar
                 Spacer()
                 if engine.isNavigating { navBanner } else { contextCard }
@@ -357,6 +361,7 @@ struct MapHomeView: View {
             Toggle(isOn: $showTrails) { Label("Trails", systemImage: "figure.walk") }
             Toggle(isOn: $showSlope) { Label("Slope angle (online)", systemImage: "triangle.fill") }
             Toggle(isOn: $showScent) { Label("Scent cone (wind)", systemImage: "wind") }
+            Toggle(isOn: $showRadar) { Label("Weather radar (online)", systemImage: "cloud.rain.fill") }
         } label: {
             Image(systemName: "square.3.layers.3d")
                 .font(.system(size: 17, weight: .semibold))
@@ -397,6 +402,25 @@ struct MapHomeView: View {
     }
 
     // MARK: - Helpers
+
+    private static let tideTimeFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
+    }()
+
+    private func tideStrip(_ t: TideService.Tide) -> some View {
+        pill {
+            HStack(spacing: 6) {
+                Image(systemName: t.isHigh ? "arrow.up" : "arrow.down")
+                Text("\(t.isHigh ? "High" : "Low") tide \(Self.tideTimeFmt.string(from: t.time))")
+                Text(String(format: "%.1f ft", t.heightFt)).foregroundStyle(.cyan)
+                if let s = tides.stationName {
+                    Text("· \(s)").foregroundStyle(.white.opacity(0.6)).lineLimit(1).truncationMode(.tail)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 6)
+    }
 
     private func pill<C: View>(@ViewBuilder _ content: () -> C) -> some View {
         content()

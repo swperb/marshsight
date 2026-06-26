@@ -17,6 +17,7 @@ struct LayerVisibility: Equatable {
     var trails = true
     var slope = false   // 3DEP slope overlay, online-only, off by default
     var scent = false   // downwind scent cone, off by default
+    var radar = false   // NEXRAD weather radar, online-only, off by default
 }
 
 struct RegionMapView: UIViewRepresentable, Equatable {
@@ -126,6 +127,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             set("trails-line", layers.trails)
             set("slope-raster", layers.slope)
             set("scent-fill", layers.scent)
+            set("radar-raster", layers.radar)
             updateScentCone(map?.userLocation?.coordinate)
         }
 
