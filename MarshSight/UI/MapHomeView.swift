@@ -36,6 +36,7 @@ struct MapHomeView: View {
     @State private var recenterTick = 0
     @State private var showFeedback = false
     @State private var showLogbook = false
+    @State private var showLegend = false
     @State private var selectedMarker: SelectedMarker?
 
     private var tideNote: String? {
@@ -93,6 +94,7 @@ struct MapHomeView: View {
             LogbookView(store: logbook, coordinate: location.fix?.coordinate,
                         weather: weather, tideNote: tideNote)
         }
+        .sheet(isPresented: $showLegend) { LegendView() }
     }
 
     // MARK: - Top bar
@@ -110,6 +112,7 @@ struct MapHomeView: View {
                 Label(gpsText, systemImage: gpsSymbol).foregroundStyle(gpsColor)
             }
             Menu {
+                Button { showLegend = true } label: { Label("Map Legend", systemImage: "list.bullet.rectangle") }
                 Button { showLogbook = true } label: { Label("Logbook", systemImage: "book.closed") }
                 Button { showFeedback = true } label: { Label("Help & Feedback", systemImage: "questionmark.bubble") }
             } label: {
@@ -237,6 +240,9 @@ struct MapHomeView: View {
 
     private var contextCard: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("AROUND YOU")
+                .font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.45))
+                .tracking(0.5)
             if let land = currentLand {
                 contextRow(color: land.access.color, icon: "leaf.fill",
                            title: land.name, sub: "\(land.access.label)  -  \(land.manager)")
@@ -252,7 +258,7 @@ struct MapHomeView: View {
             if let g = nearestGauge {
                 contextRow(color: .teal, icon: "gauge.with.dots.needle.bottom.50percent",
                            title: g.name,
-                           sub: gaugeText(g))
+                           sub: "River gauge  ·  \(gaugeText(g))")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -63,33 +63,36 @@ enum NHDService {
                       radiusKm: Double = 12,
                       maxLakes: Int = 1500) async throws -> [[CLLocationCoordinate2D]] {
         let envelope = box(center: center, radiusKm: radiusKm)
-        let base = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/12/query"
-
         var all: [[CLLocationCoordinate2D]] = []
-        var offset = 0
-        let page = 2000
-        while all.count < maxLakes {
-            var comps = URLComponents(string: base)!
-            comps.queryItems = [
-                .init(name: "where", value: "1=1"),
-                .init(name: "geometry", value: envelope),
-                .init(name: "geometryType", value: "esriGeometryEnvelope"),
-                .init(name: "inSR", value: "4326"),
-                .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
-                .init(name: "outFields", value: ""),
-                .init(name: "returnGeometry", value: "true"),
-                .init(name: "resultRecordCount", value: String(page)),
-                .init(name: "resultOffset", value: String(offset)),
-                .init(name: "f", value: "geojson")
-            ]
-            guard let url = comps.url else { break }
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-                  let fc = try? JSONDecoder().decode(WaterbodyFC.self, from: data)
-            else { break }
-            all.append(contentsOf: fc.features.compactMap { $0.geometry?.rings() }.flatMap { $0 })
-            if fc.features.count < page { break }
-            offset += page
+        // Layer 12 = Waterbody (lakes, ponds, reservoirs); layer 9 = Area
+        // (the surface of wide rivers like the Coosa). Both are navigable water.
+        for layer in [12, 9] {
+            let base = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/\(layer)/query"
+            var offset = 0
+            let page = 2000
+            while all.count < maxLakes {
+                var comps = URLComponents(string: base)!
+                comps.queryItems = [
+                    .init(name: "where", value: "1=1"),
+                    .init(name: "geometry", value: envelope),
+                    .init(name: "geometryType", value: "esriGeometryEnvelope"),
+                    .init(name: "inSR", value: "4326"),
+                    .init(name: "spatialRel", value: "esriSpatialRelIntersects"),
+                    .init(name: "outFields", value: ""),
+                    .init(name: "returnGeometry", value: "true"),
+                    .init(name: "resultRecordCount", value: String(page)),
+                    .init(name: "resultOffset", value: String(offset)),
+                    .init(name: "f", value: "geojson")
+                ]
+                guard let url = comps.url else { break }
+                guard let (data, response) = try? await URLSession.shared.data(from: url),
+                      let http = response as? HTTPURLResponse, http.statusCode == 200,
+                      let fc = try? JSONDecoder().decode(WaterbodyFC.self, from: data)
+                else { break }
+                all.append(contentsOf: fc.features.compactMap { $0.geometry?.rings() }.flatMap { $0 })
+                if fc.features.count < page { break }
+                offset += page
+            }
         }
         return all
     }

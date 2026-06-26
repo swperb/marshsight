@@ -78,7 +78,7 @@ final class RegionStore: ObservableObject {
 
     /// Download every layer for a bounded region, simplify, persist, activate.
     /// An empty `name` is resolved to the nearby place name (e.g. "Pelham").
-    func download(name: String, center: CLLocationCoordinate2D, radiusKm: Double = 20) async {
+    func download(name: String, center: CLLocationCoordinate2D, radiusKm: Double = 40) async {
         isWorking = true
         defer { isWorking = false }
 
