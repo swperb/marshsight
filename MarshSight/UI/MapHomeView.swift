@@ -38,6 +38,7 @@ struct MapHomeView: View {
     @State private var showLogbook = false
     @State private var showLegend = false
     @State private var selectedMarker: SelectedMarker?
+    @State private var drivePreview: NavDestination?
 
     private var tideNote: String? {
         tides.next.map { "\($0.isHigh ? "High" : "Low") \(Self.tideTimeFmt.string(from: $0.time))" }
@@ -95,6 +96,9 @@ struct MapHomeView: View {
                         weather: weather, tideNote: tideNote)
         }
         .sheet(isPresented: $showLegend) { LegendView() }
+        .sheet(item: $drivePreview) { dest in
+            DrivePreviewView(destination: dest, origin: location.fix?.coordinate)
+        }
     }
 
     // MARK: - Top bar
@@ -455,14 +459,25 @@ struct MapHomeView: View {
                     Image(systemName: "xmark.circle.fill").font(.title3).foregroundStyle(.white.opacity(0.5))
                 }
             }
-            Button {
-                onNavigateTo(NavDestination(name: m.title,
-                                            latitude: m.coordinate.latitude, longitude: m.coordinate.longitude))
-                selectedMarker = nil
-            } label: {
-                Label("Take me here", systemImage: "location.north.line.fill")
-                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
-                    .background(.cyan, in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.black)
+            HStack(spacing: 10) {
+                Button {
+                    drivePreview = NavDestination(name: m.title,
+                                                  latitude: m.coordinate.latitude, longitude: m.coordinate.longitude)
+                    selectedMarker = nil
+                } label: {
+                    Label("Drive", systemImage: "car.fill")
+                        .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
+                        .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.white)
+                }
+                Button {
+                    onNavigateTo(NavDestination(name: m.title,
+                                                latitude: m.coordinate.latitude, longitude: m.coordinate.longitude))
+                    selectedMarker = nil
+                } label: {
+                    Label("Take me here", systemImage: "location.north.line.fill")
+                        .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
+                        .background(.cyan, in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.black)
+                }
             }
         }
         .padding(14)

@@ -15,6 +15,7 @@ struct DestinationSearchView: View {
     @State private var query = ""
     @State private var results: [Result] = []
     @State private var searching = false
+    @State private var drivePreview: NavDestination?
 
     struct Result: Identifiable {
         let id = UUID()
@@ -33,7 +34,21 @@ struct DestinationSearchView: View {
             .navigationTitle("Where to?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .sheet(item: $drivePreview) { dest in
+                DrivePreviewView(destination: dest, origin: center)
+            }
         }
+    }
+
+    /// Preview the drive to a place, then optionally hand off to Apple Maps.
+    private func driveButton(_ name: String, _ coord: CLLocationCoordinate2D) -> some View {
+        Button {
+            drivePreview = NavDestination(name: name, latitude: coord.latitude, longitude: coord.longitude)
+        } label: {
+            Image(systemName: "car.fill").font(.title3).foregroundStyle(.cyan)
+        }
+        .buttonStyle(.borderless)
+        .help("Preview the drive")
     }
 
     // MARK: - Sections
@@ -58,6 +73,7 @@ struct DestinationSearchView: View {
                         }
                     }.buttonStyle(.plain)
                     Spacer()
+                    driveButton(r.name, r.coordinate)
                     Button { contributions.saveSpot(name: r.name, at: r.coordinate) } label: {
                         Image(systemName: "plus.circle").font(.title3)
                     }
@@ -87,6 +103,7 @@ struct DestinationSearchView: View {
                         }
                     }.buttonStyle(.plain)
                     Spacer()
+                    driveButton(spot.name, spot.coordinate)
                     voteControl(spot)
                 }
             }
@@ -96,12 +113,16 @@ struct DestinationSearchView: View {
     private var nearbySection: some View {
         Section("Nearby") {
             ForEach(nearbyMarkers) { spot in
-                Button { choose(spot.name, spot.coordinate) } label: {
-                    Label {
-                        Text(spot.name)
-                    } icon: {
-                        Image(systemName: spot.kind.symbol).foregroundStyle(spot.kind.tint)
-                    }
+                HStack {
+                    Button { choose(spot.name, spot.coordinate) } label: {
+                        Label {
+                            Text(spot.name)
+                        } icon: {
+                            Image(systemName: spot.kind.symbol).foregroundStyle(spot.kind.tint)
+                        }
+                    }.buttonStyle(.plain)
+                    Spacer()
+                    driveButton(spot.name, spot.coordinate)
                 }
             }
         }

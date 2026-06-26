@@ -75,10 +75,11 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
 }
 
 /// A place the user is navigating to.
-struct NavDestination: Equatable {
+struct NavDestination: Equatable, Identifiable {
     var name: String
     var latitude: Double
     var longitude: Double
+    var id: String { "\(latitude),\(longitude),\(name)" }
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
