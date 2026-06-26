@@ -11,7 +11,7 @@ import { fetchGauges } from "./sources/usgs";
 import { fetchRivers, fetchLakes } from "./sources/nhd";
 import { fetchPublicLands } from "./sources/padus";
 import { addContribution, nearbyContributions, addWaitlistEmail, vote as castVote, Contribution } from "./store";
-import { addPost, recentPosts, addCameraPhoto, cameraPhotos, supabaseEnabled } from "./supabase";
+import { addPost, recentPosts, addCameraPhoto, cameraPhotos, uploadPhoto, supabaseEnabled } from "./supabase";
 import { randomUUID } from "node:crypto";
 
 const app = express();
@@ -19,7 +19,7 @@ const PORT = Number(process.env.PORT ?? 8088);
 const TTL = 5 * 60 * 1000; // 5 minutes
 const startedAt = Date.now();
 
-app.use(express.json({ limit: "256kb" }));
+app.use(express.json({ limit: "8mb" }));
 
 // CORS: allow any origin, GET/POST.
 app.use((req, res, next) => {
@@ -155,11 +155,22 @@ app.post("/v1/posts", asyncRoute(async (req, res) => {
   const b = req.body ?? {};
   if (!b.kind) throw new BadRequest("kind required");
   const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : undefined);
+
+  // Optional photo: accept a base64 image, upload to storage, keep the URL.
+  let photoUrl: string | undefined = b.photoUrl ? String(b.photoUrl) : undefined;
+  if (!photoUrl && b.photoBase64 && supabaseEnabled()) {
+    const m = String(b.photoBase64).match(/^data:(image\/\w+);base64,(.*)$/s);
+    const ct = m ? m[1] : "image/jpeg";
+    const bytes = Buffer.from(m ? m[2] : String(b.photoBase64), "base64");
+    const ext = (ct.split("/")[1] || "jpg").replace("jpeg", "jpg");
+    photoUrl = await uploadPhoto(new Uint8Array(bytes), ct, `trophies/${randomUUID()}.${ext}`);
+  }
+
   if (supabaseEnabled()) await addPost({
     kind: String(b.kind).slice(0, 24),
     note: b.note ? String(b.note).slice(0, 1000) : undefined,
     lat: num(b.lat), lon: num(b.lon),                 // omitted = location hidden
-    photoUrl: b.photoUrl ? String(b.photoUrl) : undefined,
+    photoUrl,
     tempF: num(b.tempF), wind: b.wind ? String(b.wind) : undefined,
     moon: b.moon ? String(b.moon) : undefined,
     author: b.author ? String(b.author).slice(0, 60) : undefined,

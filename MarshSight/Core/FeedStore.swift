@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import Combine
 
 /// A shared harvest/catch in the community feed ("Strava for hunting").
@@ -36,8 +37,9 @@ final class FeedStore: ObservableObject {
         posts = decoded.posts
     }
 
-    /// Share a logbook entry to the feed. `includeLocation` defaults off.
-    func share(_ entry: LogEntry, includeLocation: Bool, author: String?) async {
+    /// Share a logbook entry to the feed. `includeLocation` defaults off; the
+    /// photo (if any) is downscaled and uploaded with the post.
+    func share(_ entry: LogEntry, photoData: Data?, includeLocation: Bool, author: String?) async {
         guard let url = URL(string: "\(PlatformAPI.baseURL)/v1/posts") else { return }
         var body: [String: Any] = ["kind": entry.kind.rawValue]
         if !entry.note.isEmpty { body["note"] = entry.note }
@@ -46,6 +48,7 @@ final class FeedStore: ObservableObject {
         if let w = entry.windCardinal { body["wind"] = w }
         if let m = entry.moonPhase { body["moon"] = m }
         if let a = author, !a.isEmpty { body["author"] = a }
+        if let photoData { body["photoBase64"] = "data:image/jpeg;base64,\(photoData.base64EncodedString())" }
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -53,5 +56,19 @@ final class FeedStore: ObservableObject {
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.shared.data(for: req)
         await load()
+    }
+}
+
+extension UIImage {
+    /// A downscaled JPEG suitable for upload (keeps payloads small).
+    func compressedJPEG(maxDimension: CGFloat = 1200, quality: CGFloat = 0.7) -> Data? {
+        let longest = max(size.width, size.height)
+        guard longest > maxDimension else { return jpegData(compressionQuality: quality) }
+        let scale = maxDimension / longest
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let img = UIGraphicsImageRenderer(size: newSize).image { _ in
+            draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        return img.jpegData(compressionQuality: quality)
     }
 }

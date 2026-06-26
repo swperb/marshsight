@@ -6,6 +6,7 @@ import SwiftUI
 /// onto the map at the camera. The inbound-email service is the server-side piece.
 struct ConnectionsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showCameras = false
 
     /// A stable per-install code for the personal camera inbox address.
     @AppStorage("camInboxCode") private var camCode = ""
@@ -43,9 +44,9 @@ struct ConnectionsView: View {
                         }.buttonStyle(.borderless)
                     }
 
-                    Label("Activating soon — your address is reserved. We'll let you know when forwarding goes live.",
-                          systemImage: "clock")
-                        .font(.caption).foregroundStyle(.orange)
+                    Button { showCameras = true } label: {
+                        Label("View my camera photos", systemImage: "photo.on.rectangle.angled")
+                    }
                 }
 
                 Section {
@@ -64,6 +65,7 @@ struct ConnectionsView: View {
             .onAppear {
                 if camCode.isEmpty { camCode = String(UUID().uuidString.prefix(8)).lowercased() }
             }
+            .sheet(isPresented: $showCameras) { CamerasView(code: camCode) }
         }
     }
 }

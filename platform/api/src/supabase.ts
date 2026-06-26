@@ -173,3 +173,22 @@ export async function cameraPhotos(camCode: string, limit = 200): Promise<any[]>
   if (!res.ok) throw new Error(`supabase camera query ${res.status}`);
   return (await res.json()) as any[];
 }
+
+// Upload image bytes to the public storage bucket; returns the public URL (or
+// undefined on failure, so a post still saves without the photo).
+export async function uploadPhoto(bytes: Uint8Array, contentType: string, path: string): Promise<string | undefined> {
+  const bucket = process.env.STORAGE_BUCKET || "media";
+  const res = await fetch(`${urlBase()}/storage/v1/object/${bucket}/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: serviceKey() as string,
+      Authorization: `Bearer ${serviceKey()}`,
+      "Content-Type": contentType,
+      "x-upsert": "true",
+    },
+    body: bytes as unknown as BodyInit,
+    signal: AbortSignal.timeout(25000),
+  });
+  if (!res.ok) return undefined;
+  return `${urlBase()}/storage/v1/object/public/${bucket}/${path}`;
+}

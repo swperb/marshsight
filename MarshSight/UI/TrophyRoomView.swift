@@ -144,12 +144,17 @@ struct TrophyRoomView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contextMenu {
             Button {
-                Task { await feed.share(e, includeLocation: false, author: feedName.isEmpty ? nil : feedName) }
+                Task { await feed.share(e, photoData: photoData(e), includeLocation: false, author: feedName.isEmpty ? nil : feedName) }
             } label: { Label("Share to Feed", systemImage: "square.and.arrow.up") }
             Button {
-                Task { await feed.share(e, includeLocation: true, author: feedName.isEmpty ? nil : feedName) }
+                Task { await feed.share(e, photoData: photoData(e), includeLocation: true, author: feedName.isEmpty ? nil : feedName) }
             } label: { Label("Share with location", systemImage: "mappin.and.ellipse") }
         }
+    }
+
+    private func photoData(_ e: LogEntry) -> Data? {
+        guard let f = e.photoFile, let img = UIImage(contentsOfFile: store.photoURL(f).path) else { return nil }
+        return img.compressedJPEG()
     }
 
     private var empty: some View {
