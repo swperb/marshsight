@@ -141,10 +141,13 @@ struct MapHomeView: View {
                         .foregroundStyle(.green)
                 }
             }
+            .accessibilityLabel("Region, \(regions.active?.name ?? "none selected")")
+            .accessibilityHint("Change your area or download it for offline")
             Spacer()
             pill {
                 Label(gpsText, systemImage: gpsSymbol).foregroundStyle(gpsColor)
             }
+            .accessibilityLabel("Location accuracy, \(gpsText)")
             Menu {
                 if !premium.isPremium {
                     Button { showPaywall = true } label: { Label("Upgrade to MarshSight+", systemImage: "sparkles") }
@@ -162,6 +165,7 @@ struct MapHomeView: View {
                     .frame(width: 32, height: 32)
                     .background(.black.opacity(0.55), in: Circle())
             }
+            .accessibilityLabel("More: feed, trophy room, logbook, and help")
         }
         .padding(.top, 8)
     }
@@ -379,13 +383,16 @@ struct MapHomeView: View {
                         .background(.black.opacity(0.55), in: Circle())
                         .foregroundStyle(.white)
                 }
+                .accessibilityLabel("Share your recorded track")
             }
             circleButton(icon: "plus", action: onReport)
+                .accessibilityLabel("Drop a report")
             circleButton(icon: "location.fill.viewfinder") {
                 regions.recenterToUser()
                 recenterTick += 1
                 if let c = location.fix?.coordinate { Task { await regions.autoLoadIfNeeded(around: c) } }
             }
+            .accessibilityLabel("Recenter on my location")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         .padding(.trailing, 14)
@@ -423,6 +430,8 @@ struct MapHomeView: View {
                 }
             }
         }
+        .accessibilityLabel("Download this area for offline use")
+        .accessibilityValue(offlineMap?.isComplete == true ? "Saved" : isDownloadingActive ? "Downloading" : "Not saved")
     }
 
     private var recordButton: some View {
@@ -435,6 +444,7 @@ struct MapHomeView: View {
                 .background((recorder.isRecording ? Color.red : .black.opacity(0.55)), in: Circle())
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel(recorder.isRecording ? "Stop recording your track" : "Record your track")
     }
 
     private var basemapMenu: some View {
@@ -451,6 +461,7 @@ struct MapHomeView: View {
                 .background(.black.opacity(0.55), in: Circle())
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel("Basemap, \(basemap.label)")
     }
 
     private var layersMenu: some View {
@@ -476,6 +487,7 @@ struct MapHomeView: View {
                 .background(.black.opacity(0.55), in: Circle())
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel("Map layers")
     }
 
     private var returnMenu: some View {
@@ -496,6 +508,7 @@ struct MapHomeView: View {
                 .background(.black.opacity(0.55), in: Circle())
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel(hasParked ? "Get back to your truck" : "Mark your truck or get back")
     }
 
     private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
