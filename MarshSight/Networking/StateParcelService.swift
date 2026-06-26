@@ -38,6 +38,7 @@ enum StateParcelService {
     /// system (the part Regrid licenses). Boundaries alone still show the lines.
     static let countyEndpoints: [String: String] = [
         "AL/COOSA": "https://maps.capturecama.com/arcgis/rest/services/Coosa/Coosa03122026/MapServer/171",
+        "AL/AUTAUGA": "https://maps.capturecama.com/arcgis/rest/services/Autauga/Autauga07102021/MapServer/120",
     ]
 
     private static func countyKey(_ state: String, _ county: String) -> String {
