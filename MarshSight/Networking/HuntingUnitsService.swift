@@ -151,7 +151,51 @@ enum HuntingUnitsService {
         // CA: CDFW deer hunt zones.
         "CA": Source(
             url: "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds342_fpu/FeatureServer/0/query",
-            nameField: "Zone_Nam", kind: "Deer Hunt Zone")
+            nameField: "Zone_Nam", kind: "Deer Hunt Zone"),
+        // PA: PA Game Commission state game lands (numbered).
+        "PA": Source(
+            url: "https://pgcmaps.pa.gov/arcgis/rest/services/PGC/NEW_PUBLIC/MapServer/18/query",
+            nameField: "NAME", kind: "State Game Lands"),
+        // WV: WV DNR Wildlife Management Areas (layer 14).
+        "WV": Source(
+            url: "https://services9.arcgis.com/SQbkdxLkuQJuLGtx/arcgis/rest/services/West_Virginia_Wildlife_Management_Areas/FeatureServer/14/query",
+            nameField: "Name", kind: "WMA"),
+        // VA: VA Dept of Wildlife Resources WMA boundaries (self-hosted).
+        "VA": Source(
+            url: "https://services.dwr.virginia.gov/arcgis/rest/services/HUB_Layers/DWR_WMA_Boundaries/FeatureServer/0/query",
+            nameField: "WMA_NAME", kind: "WMA"),
+        // NC: NC Wildlife Resources Commission game lands (layer 21).
+        "NC": Source(
+            url: "https://services1.arcgis.com/YfqBAUM5nWR3yhGP/arcgis/rest/services/gamelands_general/FeatureServer/21/query",
+            nameField: "GML_HAB", kind: "Game Land"),
+        // SC: SCDNR public lands (WMAs and other public properties).
+        "SC": Source(
+            url: "https://services.arcgis.com/acgZYxoN5Oj8pDLa/arcgis/rest/services/DEV_-_SCDNR_Public_Lands_Viewer/FeatureServer/3/query",
+            nameField: "PropertyName", kind: "Public Land"),
+        // MD: MD DNR protected lands, filtered to named WMAs.
+        "MD": Source(
+            url: "https://mdgeodata.md.gov/imap/rest/services/Environment/MD_ProtectedLands/FeatureServer/0/query",
+            nameField: "DNRName", kind: "WMA", whereClause: "DNRName LIKE '%WMA%'"),
+        // ND: ND Game & Fish Wildlife Management Areas.
+        "ND": Source(
+            url: "https://services1.arcgis.com/GOcSXpzwBHyk2nog/arcgis/rest/services/NDGISHUB_Wildlife_Management_Areas/FeatureServer/0/query",
+            nameField: "Unit_Name", kind: "WMA"),
+        // MN: MN DNR publicly accessible Wildlife Management Areas (self-hosted).
+        "MN": Source(
+            url: "https://enterprise.gisdata.mn.gov/aghost/rest/services/us_mn_state_dnr/bdry_dnr_wildlife_mgmt_areas_pub/FeatureServer/0/query",
+            nameField: "unit_name", kind: "WMA"),
+        // WI: WI DNR managed properties (wildlife and fishery areas, self-hosted).
+        "WI": Source(
+            url: "https://dnrmaps.wi.gov/arcgis/rest/services/LF_DML/LF_AGOL_STAGING_WTM_Ext/MapServer/0/query",
+            nameField: "PROP_NAME", kind: "DNR Property"),
+        // MI: MI DNR managed lands, filtered to state game areas.
+        "MI": Source(
+            url: "https://services3.arcgis.com/Jdnp1TjADvSDxMAX/arcgis/rest/services/DNRLOTSParcelsOPENDATA/FeatureServer/2/query",
+            nameField: "ProjectName", kind: "State Game Area", whereClause: "ProjectUseType='Wildlife Game Areas'"),
+        // OH: ODNR Division of Wildlife lands, filtered to wildlife areas.
+        "OH": Source(
+            url: "https://gis.ohiodnr.gov/arcgis/rest/services/DOW_Services/HuntingRegulations_AGOL_3/MapServer/18/query",
+            nameField: "LANDS_NAME", kind: "Wildlife Area", whereClause: "PROP_TYPE='WA'")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
