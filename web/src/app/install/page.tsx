@@ -45,22 +45,58 @@ export default function Install() {
           </li>
           <li>Tap <strong>Tap to Install</strong>, then tap <strong>Install</strong> when iOS asks.</li>
           <li>Go to your home screen and wait for <strong>MarshSight</strong> to finish downloading.</li>
-          <li>Open it and accept the safety notice. That&apos;s it.</li>
+          <li>
+            The first time you open it, iOS may say <strong>&ldquo;Developer Mode
+            Required.&rdquo;</strong>{" "}That&apos;s normal for a beta - turn it on
+            once (steps below), then open MarshSight again.
+          </li>
         </ol>
 
+        <div className="rounded-xl border border-pine-700/30 bg-pine-700/5 p-4 text-sm">
+          <p className="font-semibold text-ink-800">If you see &ldquo;Developer Mode Required&rdquo;</p>
+          <p className="mt-1 text-ink-600">A one-time setup on this phone:</p>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-ink-700">
+            <li>Open <strong>Settings → Privacy &amp; Security</strong></li>
+            <li>Scroll to the bottom and tap <strong>Developer Mode</strong></li>
+            <li>Turn <strong>Developer Mode ON</strong>, then tap <strong>Restart</strong></li>
+            <li>After it reboots and you unlock it, tap <strong>Turn On</strong> and enter your passcode</li>
+            <li>Open <strong>MarshSight</strong> - it&apos;ll run now</li>
+          </ol>
+        </div>
+
         <div className="rounded-xl border border-line bg-paper-50 p-4 text-sm">
-          <p className="font-medium text-ink-800">Won&apos;t install?</p>
+          <p className="font-medium text-ink-800">&ldquo;Integrity could not be verified&rdquo; / won&apos;t install?</p>
           <p className="mt-1 text-ink-600">
-            Your device probably isn&apos;t on the tester list yet. Send your
-            iPhone&apos;s <strong>UDID</strong> to whoever invited you and they&apos;ll add it.
-            (Get your UDID at <span className="text-pine-700">get.udid.io</span> in Safari.)
+            Your device isn&apos;t on the tester list yet. Get your iPhone&apos;s{" "}
+            <strong>UDID</strong> at <span className="text-pine-700">get.udid.io</span>{" "}
+            in Safari, send it to whoever invited you, and reopen this page once they&apos;ve added it.
           </p>
         </div>
 
-        <p className="text-xs text-ink-400">
-          Requires an iPhone, iOS, and Safari. This is a navigation aid, not a
-          survey instrument - always carry a backup and check local regulations.
-        </p>
+        <div className="space-y-2 border-t border-line pt-5 text-xs text-ink-400">
+          <p className="font-medium text-ink-500">Before you rely on it:</p>
+          <ul className="list-disc space-y-1.5 pl-5">
+            <li>
+              This is an <strong>early beta for invited testers</strong> - expect
+              rough edges, and things may change or break between updates.
+            </li>
+            <li>
+              MarshSight is a <strong>navigation aid, not a survey instrument or an
+              authority.</strong> GPS, compass, and boundary data have real error
+              and can be out of date. Always verify land access, boundaries,
+              regulations, and hazards yourself, carry a backup, and use your own
+              judgment on the water.
+            </li>
+            <li>
+              It installs only on phones added to the tester list, and this beta
+              build expires after about a year.
+            </li>
+            <li>
+              When MarshSight launches on the App Store, install it there instead -
+              no Developer Mode, no tester list, automatic updates.
+            </li>
+          </ul>
+        </div>
       </div>
     </main>
   );
