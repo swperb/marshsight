@@ -5,7 +5,9 @@ import SwiftUI
 /// the front of the "Strava for hunting & fishing" social layer.
 struct TrophyRoomView: View {
     @ObservedObject var store: LogbookStore
+    @ObservedObject var feed: FeedStore
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("feedName") private var feedName = ""
 
     var body: some View {
         NavigationStack {
@@ -140,6 +142,14 @@ struct TrophyRoomView: View {
         }
         .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contextMenu {
+            Button {
+                Task { await feed.share(e, includeLocation: false, author: feedName.isEmpty ? nil : feedName) }
+            } label: { Label("Share to Feed", systemImage: "square.and.arrow.up") }
+            Button {
+                Task { await feed.share(e, includeLocation: true, author: feedName.isEmpty ? nil : feedName) }
+            } label: { Label("Share with location", systemImage: "mappin.and.ellipse") }
+        }
     }
 
     private var empty: some View {

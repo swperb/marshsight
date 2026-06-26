@@ -91,3 +91,85 @@ export async function addWaitlistEmail(email: string): Promise<void> {
   });
   if (!res.ok && res.status !== 409) throw new Error(`supabase waitlist ${res.status}`);
 }
+
+// ---- Social feed (posts) ----
+
+export interface FeedPost {
+  id?: string;
+  kind: string;
+  note?: string;
+  lat?: number | null;
+  lon?: number | null;
+  photoUrl?: string;
+  tempF?: number;
+  wind?: string;
+  moon?: string;
+  author?: string;
+  deviceId?: string;
+  upvotes?: number;
+  createdAt?: string;
+}
+
+export async function addPost(p: FeedPost): Promise<void> {
+  const res = await fetch(`${urlBase()}/rest/v1/posts`, {
+    method: "POST",
+    headers: headers({ Prefer: "return=minimal" }),
+    body: JSON.stringify({
+      kind: p.kind, note: p.note ?? null,
+      lat: p.lat ?? null, lon: p.lon ?? null, photo_url: p.photoUrl ?? null,
+      temp_f: p.tempF ?? null, wind: p.wind ?? null, moon: p.moon ?? null,
+      author: p.author ?? null, device_id: p.deviceId ?? null,
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`supabase post insert ${res.status}: ${await res.text()}`);
+}
+
+export async function recentPosts(limit = 100): Promise<FeedPost[]> {
+  const params = new URLSearchParams();
+  params.set("select", "id,kind,note,lat,lon,photo_url,temp_f,wind,moon,author,upvotes,created_at");
+  params.set("order", "created_at.desc");
+  params.set("limit", String(limit));
+  const res = await fetch(`${urlBase()}/rest/v1/posts?${params}`, {
+    headers: headers(), signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`supabase feed ${res.status}`);
+  const rows = (await res.json()) as any[];
+  return rows.map((r) => ({
+    id: r.id, kind: r.kind, note: r.note ?? undefined,
+    lat: r.lat ?? undefined, lon: r.lon ?? undefined, photoUrl: r.photo_url ?? undefined,
+    tempF: r.temp_f ?? undefined, wind: r.wind ?? undefined, moon: r.moon ?? undefined,
+    author: r.author ?? undefined, upvotes: r.upvotes ?? 0, createdAt: r.created_at,
+  }));
+}
+
+// ---- Trail-camera ingest ----
+
+export async function addCameraPhoto(
+  camCode: string, photoUrl: string,
+  cameraName?: string, takenAt?: string, lat?: number, lon?: number
+): Promise<void> {
+  const res = await fetch(`${urlBase()}/rest/v1/camera_photos`, {
+    method: "POST",
+    headers: headers({ Prefer: "return=minimal" }),
+    body: JSON.stringify({
+      cam_code: camCode, photo_url: photoUrl, camera_name: cameraName ?? null,
+      taken_at: takenAt ?? null, lat: lat ?? null, lon: lon ?? null,
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`supabase camera insert ${res.status}: ${await res.text()}`);
+}
+
+export async function cameraPhotos(camCode: string, limit = 200): Promise<any[]> {
+  const params = new URLSearchParams();
+  params.set("select", "id,cam_code,photo_url,camera_name,taken_at,lat,lon,created_at");
+  params.set("cam_code", `eq.${camCode}`);
+  params.set("order", "created_at.desc");
+  params.set("limit", String(limit));
+  const res = await fetch(`${urlBase()}/rest/v1/camera_photos?${params}`, {
+    headers: headers(), signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`supabase camera query ${res.status}`);
+  return (await res.json()) as any[];
+}

@@ -11,6 +11,7 @@ import { fetchGauges } from "./sources/usgs";
 import { fetchRivers, fetchLakes } from "./sources/nhd";
 import { fetchPublicLands } from "./sources/padus";
 import { addContribution, nearbyContributions, addWaitlistEmail, vote as castVote, Contribution } from "./store";
+import { addPost, recentPosts, addCameraPhoto, cameraPhotos, supabaseEnabled } from "./supabase";
 import { randomUUID } from "node:crypto";
 
 const app = express();
@@ -146,6 +147,56 @@ app.post("/v1/waitlist", asyncRoute(async (req, res) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new BadRequest("valid email required");
   await addWaitlistEmail(email);
   res.status(201).json({ ok: true });
+}));
+
+// ---- Social feed (trophy room) ----
+
+app.post("/v1/posts", asyncRoute(async (req, res) => {
+  const b = req.body ?? {};
+  if (!b.kind) throw new BadRequest("kind required");
+  const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : undefined);
+  if (supabaseEnabled()) await addPost({
+    kind: String(b.kind).slice(0, 24),
+    note: b.note ? String(b.note).slice(0, 1000) : undefined,
+    lat: num(b.lat), lon: num(b.lon),                 // omitted = location hidden
+    photoUrl: b.photoUrl ? String(b.photoUrl) : undefined,
+    tempF: num(b.tempF), wind: b.wind ? String(b.wind) : undefined,
+    moon: b.moon ? String(b.moon) : undefined,
+    author: b.author ? String(b.author).slice(0, 60) : undefined,
+    deviceId: b.deviceId ? String(b.deviceId).slice(0, 64) : undefined,
+  });
+  res.status(201).json({ ok: true });
+}));
+
+app.get("/v1/feed", asyncRoute(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 100, 200);
+  const posts = supabaseEnabled() ? await recentPosts(limit) : [];
+  res.json({ posts });
+}));
+
+// ---- Trail-camera ingest ----
+
+// Inbound-email webhook. Configure your email service (Cloudflare Email Worker
+// or SendGrid Inbound Parse) to POST normalized JSON here:
+//   { to: "cam-<code>@in.marshsight.com", photoUrl, cameraName?, takenAt?, lat?, lon? }
+app.post("/v1/inbound/camera", asyncRoute(async (req, res) => {
+  const b = req.body ?? {};
+  const to = String(b.to ?? "");
+  const camCode = (to.match(/cam-([a-z0-9]+)@/i)?.[1] ?? (b.camCode ? String(b.camCode) : "")).toLowerCase();
+  const photoUrl = b.photoUrl ? String(b.photoUrl) : (b.photo_url ? String(b.photo_url) : "");
+  if (!camCode || !photoUrl) throw new BadRequest("camCode and photoUrl required");
+  const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : undefined);
+  if (supabaseEnabled()) await addCameraPhoto(camCode, photoUrl,
+    b.cameraName ? String(b.cameraName) : undefined,
+    b.takenAt ? String(b.takenAt) : undefined, num(b.lat), num(b.lon));
+  res.json({ ok: true });
+}));
+
+app.get("/v1/cameras", asyncRoute(async (req, res) => {
+  const code = String(req.query.code ?? "").toLowerCase();
+  if (!code) throw new BadRequest("code required");
+  const photos = supabaseEnabled() ? await cameraPhotos(code) : [];
+  res.json({ photos });
 }));
 
 // 404 + error handlers.

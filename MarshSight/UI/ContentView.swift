@@ -13,6 +13,7 @@ struct ContentView: View {
     @StateObject private var offline = OfflineManager()
     @StateObject private var logbook = LogbookStore()
     @StateObject private var premium = PremiumStore()
+    @StateObject private var feed = FeedStore()
 
     @State private var showReport = false
     @State private var reportKind: Contribution.Kind = .hazard
@@ -94,6 +95,7 @@ struct ContentView: View {
                     tides: tides,
                     logbook: logbook,
                     premium: premium,
+                    feed: feed,
                     onEnterAR: { showAR = true },
                     onReport: { reportKind = .hazard; showReport = true },
                     onTagOwner: { reportKind = .owner; showReport = true },
