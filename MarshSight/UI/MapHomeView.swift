@@ -40,6 +40,8 @@ struct MapHomeView: View {
     @State private var showLogbook = false
     @State private var showLegend = false
     @State private var showPaywall = false
+    @State private var showTrophy = false
+    @State private var showConnections = false
     @State private var selectedMarker: SelectedMarker?
     @State private var drivePreview: NavDestination?
     @State private var mapCenter: CLLocationCoordinate2D?
@@ -109,6 +111,8 @@ struct MapHomeView: View {
         }
         .sheet(isPresented: $showLegend) { LegendView() }
         .sheet(isPresented: $showPaywall) { PaywallView(store: premium) }
+        .sheet(isPresented: $showTrophy) { TrophyRoomView(store: logbook) }
+        .sheet(isPresented: $showConnections) { ConnectionsView() }
         .sheet(item: $drivePreview) { dest in
             DrivePreviewView(destination: dest, origin: location.fix?.coordinate)
         }
@@ -132,6 +136,8 @@ struct MapHomeView: View {
                 if !premium.isPremium {
                     Button { showPaywall = true } label: { Label("Upgrade to MarshSight+", systemImage: "sparkles") }
                 }
+                Button { showTrophy = true } label: { Label("Trophy Room", systemImage: "trophy") }
+                Button { showConnections = true } label: { Label("Connections", systemImage: "antenna.radiowaves.left.and.right") }
                 Button { showLegend = true } label: { Label("Map Legend", systemImage: "list.bullet.rectangle") }
                 Button { showLogbook = true } label: { Label("Logbook", systemImage: "book.closed") }
                 Button { showFeedback = true } label: { Label("Help & Feedback", systemImage: "questionmark.bubble") }
