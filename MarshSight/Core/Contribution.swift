@@ -8,7 +8,7 @@ import Combine
 struct Contribution: Identifiable, Codable, Equatable {
     enum Kind: String, Codable, CaseIterable {
         case hazard, waypoint, blind, ramp, harvest, fish, note
-        case feeder, camera, foodPlot, gate
+        case feeder, camera, foodPlot, gate, owner
 
         var title: String {
             switch self {
@@ -23,6 +23,7 @@ struct Contribution: Identifiable, Codable, Equatable {
             case .camera: return "Trail Camera"
             case .foodPlot: return "Food Plot"
             case .gate: return "Gate"
+            case .owner: return "Property Owner"
             }
         }
 
@@ -36,6 +37,7 @@ struct Contribution: Identifiable, Codable, Equatable {
             case .camera: return .camera
             case .foodPlot: return .foodPlot
             case .gate: return .gate
+            case .owner: return .owner
             case .waypoint, .harvest, .fish, .note: return .waypoint
             }
         }
@@ -139,6 +141,15 @@ final class ContributionStore: ObservableObject {
     /// pending and becomes verified once the community upvotes it.
     func saveSpot(name: String, at coordinate: CLLocationCoordinate2D) {
         add(kind: .waypoint, name: name, note: nil, at: coordinate, visibility: .public)
+    }
+
+    /// The community-tagged owner for a parcel, where the county withholds it:
+    /// the most-upvoted owner tag whose point falls inside the parcel.
+    func communityOwner(in parcel: Parcel) -> String? {
+        allSpots
+            .filter { $0.kind.markerKind == .owner && parcel.contains($0.coordinate) }
+            .max { $0.score < $1.score }?
+            .name
     }
 
     /// Cast or toggle a vote on a spot (own or community). Updates locally and

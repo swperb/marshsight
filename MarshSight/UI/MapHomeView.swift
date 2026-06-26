@@ -280,7 +280,7 @@ struct MapHomeView: View {
             } else if let parcel = currentParcel {
                 contextRow(color: .orange, icon: "house.lodge.fill",
                            title: "Private Land",
-                           sub: parcel.owner.map { "Owner: \($0)" } ?? "Owner not listed")
+                           sub: parcelOwnerText(parcel))
             }
             if let unit = currentUnit {
                 contextRow(color: .purple, icon: "scope",
@@ -297,6 +297,14 @@ struct MapHomeView: View {
         .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 16))
         .padding(.bottom, 12)
         .opacity(currentLand == nil && currentParcel == nil && currentUnit == nil && nearestGauge == nil ? 0 : 1)
+    }
+
+    /// Owner line for a parcel: the county's owner if published, else the
+    /// community-tagged owner, else a nudge to tag it.
+    private func parcelOwnerText(_ parcel: Parcel) -> String {
+        if let o = parcel.owner, !o.isEmpty { return "Owner: \(o)" }
+        if let c = contributions.communityOwner(in: parcel) { return "Owner (community): \(c)" }
+        return "Owner unknown — tap + to tag it"
     }
 
     private func contextRow(color: Color, icon: String, title: String, sub: String) -> some View {
@@ -530,6 +538,7 @@ struct MapHomeView: View {
         case "camera": return "Trail camera"
         case "foodPlot": return "Food plot"
         case "gate": return "Gate"
+        case "owner": return "Property owner (community)"
         default: return "Marker"
         }
     }
@@ -544,6 +553,7 @@ struct MapHomeView: View {
         case "camera": return "camera.fill"
         case "foodPlot": return "leaf.fill"
         case "gate": return "lock.fill"
+        case "owner": return "person.text.rectangle.fill"
         default: return "mappin.circle.fill"
         }
     }

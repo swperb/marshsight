@@ -262,6 +262,7 @@ enum RegionStyle {
         case .camera: return "#3B82F6"
         case .foodPlot: return "#4ADE80"
         case .gate: return "#9CA3AF"
+        case .owner: return "#EC4899"
         }
     }
 }

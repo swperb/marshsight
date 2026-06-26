@@ -20,6 +20,7 @@ struct LegendView: View {
                     dot("#3B82F6", "Trail camera", "A trail camera")
                     dot("#4ADE80", "Food plot", "A planted food plot")
                     dot("#9CA3AF", "Gate", "A gate or access control")
+                    dot("#EC4899", "Property owner", "Community-tagged landowner")
                 }
                 Section("Land & boundaries") {
                     swatch("#34C759", filled: true, "Public land — open access")

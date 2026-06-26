@@ -17,6 +17,7 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
         case camera          // trail camera
         case foodPlot        // planted food plot
         case gate            // gate / access control on private land
+        case owner           // community-tagged property owner
 
         var symbol: String {
             switch self {
@@ -31,6 +32,7 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
             case .camera: return "camera.fill"
             case .foodPlot: return "leaf.fill"
             case .gate: return "lock.fill"
+            case .owner: return "person.text.rectangle.fill"
             }
         }
 
@@ -47,6 +49,7 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
             case .camera: return .blue
             case .foodPlot: return Color(red: 0.3, green: 0.8, blue: 0.3)
             case .gate: return .gray
+            case .owner: return .pink
             }
         }
     }
