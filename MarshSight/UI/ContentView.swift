@@ -17,6 +17,9 @@ struct ContentView: View {
     @State private var showAR = false
     @AppStorage("acceptedSafetyDisclaimer") private var acceptedSafety = false
     @AppStorage("basemap") private var basemap: Basemap = .hybrid
+    @AppStorage("parkedLat") private var parkedLat = 0.0
+    @AppStorage("parkedLon") private var parkedLon = 0.0
+    @AppStorage("hasParked") private var hasParked = false
 
     // Cached "where am I" context, recomputed once per coordinate change.
     @State private var nearestGauge: WaterGauge?
@@ -81,7 +84,13 @@ struct ContentView: View {
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true },
-                    onSearch: { showDestinationSearch = true })
+                    onSearch: { showDestinationSearch = true },
+                    onMarkTruck: markTruck,
+                    onReturnToTruck: returnToTruck,
+                    onRetrace: retraceSteps,
+                    hasParked: hasParked,
+                    canReturn: canReturn,
+                    canRetrace: canRetrace)
             .sheet(isPresented: $showReport) {
                 ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
                     if let c = location.fix?.coordinate {
@@ -116,6 +125,40 @@ struct ContentView: View {
             ?? [dest.coordinate]
         engine.navigate(to: dest, path: path)
     }
+
+    // MARK: - Return to truck / retrace
+
+    private var parkedCoordinate: CLLocationCoordinate2D? {
+        hasParked ? CLLocationCoordinate2D(latitude: parkedLat, longitude: parkedLon) : nil
+    }
+
+    /// Save the current position as where the truck or boat is parked.
+    private func markTruck() {
+        guard let c = location.fix?.coordinate else { return }
+        parkedLat = c.latitude
+        parkedLon = c.longitude
+        hasParked = true
+    }
+
+    /// Navigate back to the marked truck, or to where this session started if
+    /// nothing was marked. Water-aware, like any other destination.
+    private func returnToTruck() {
+        let coord = parkedCoordinate ?? location.track.first
+        guard let coord else { return }
+        startNavigation(to: NavDestination(name: "Truck", latitude: coord.latitude, longitude: coord.longitude))
+    }
+
+    /// Retrace the breadcrumb: follow the path walked this session in reverse,
+    /// back to where it started. Good for getting out the way you came in.
+    private func retraceSteps() {
+        let crumbs = location.track
+        guard crumbs.count > 1, let start = crumbs.first else { return }
+        engine.navigate(to: NavDestination(name: "Start", latitude: start.latitude, longitude: start.longitude),
+                        path: Array(crumbs.reversed()))
+    }
+
+    private var canRetrace: Bool { location.track.count > 1 }
+    private var canReturn: Bool { hasParked || canRetrace }
 
     private func updateContext(at c: CLLocationCoordinate2D) {
         nearestGauge = regions.nearestGauge(to: c)

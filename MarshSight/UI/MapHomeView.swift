@@ -23,6 +23,12 @@ struct MapHomeView: View {
     var onReport: () -> Void
     var onSwitchRegion: () -> Void
     var onSearch: () -> Void
+    var onMarkTruck: () -> Void
+    var onReturnToTruck: () -> Void
+    var onRetrace: () -> Void
+    var hasParked: Bool
+    var canReturn: Bool
+    var canRetrace: Bool
 
     @State private var recenterTick = 0
     @State private var showFeedback = false
@@ -266,6 +272,7 @@ struct MapHomeView: View {
         VStack(spacing: 12) {
             basemapMenu
             layersMenu
+            returnMenu
             offlineButton
             recordButton
             if recorder.hasTrack && !recorder.isRecording, let gpx = recorder.exportGPX() {
@@ -348,6 +355,26 @@ struct MapHomeView: View {
             Toggle(isOn: $showSlope) { Label("Slope angle (online)", systemImage: "triangle.fill") }
         } label: {
             Image(systemName: "square.3.layers.3d")
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 46, height: 46)
+                .background(.black.opacity(0.55), in: Circle())
+                .foregroundStyle(.white)
+        }
+    }
+
+    private var returnMenu: some View {
+        Menu {
+            Button(action: onReturnToTruck) {
+                Label(hasParked ? "Back to truck" : "Back to start", systemImage: "arrow.uturn.backward")
+            }.disabled(!canReturn)
+            Button(action: onRetrace) {
+                Label("Retrace my steps", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+            }.disabled(!canRetrace)
+            Button(action: onMarkTruck) {
+                Label("Mark truck here", systemImage: "mappin.and.ellipse")
+            }
+        } label: {
+            Image(systemName: hasParked ? "car.fill" : "car")
                 .font(.system(size: 17, weight: .semibold))
                 .frame(width: 46, height: 46)
                 .background(.black.opacity(0.55), in: Circle())
