@@ -7,36 +7,53 @@ import CoreLocation
 /// makes a truly offline FOSS basemap possible.
 /// The available open USGS National Map basemaps. All public domain, no key.
 enum Basemap: String, CaseIterable, Identifiable {
-    case hybrid, imagery, topo, relief
+    case satellite, hybrid, imagery, topo, relief
     var id: String { rawValue }
 
     var label: String {
         switch self {
+        case .satellite: return "Satellite (HD)"
         case .hybrid: return "Satellite + Topo"
-        case .imagery: return "Satellite"
+        case .imagery: return "Satellite (offline)"
         case .topo: return "Topo"
         case .relief: return "Terrain"
         }
     }
     var icon: String {
         switch self {
+        case .satellite: return "globe.americas.fill"
         case .hybrid: return "map.fill"
-        case .imagery: return "globe.americas.fill"
+        case .imagery: return "globe"
         case .topo: return "map"
         case .relief: return "mountain.2.fill"
         }
     }
-    /// USGS National Map tiled service for this basemap (ArcGIS z/y/x order).
+    /// Tiled imagery service for this basemap (ArcGIS z/y/x order). Satellite is
+    /// Esri World Imagery (sharp to z19); the rest are USGS National Map
+    /// public-domain tiles, which are the ones cacheable for offline use.
     var tileURL: String {
+        if self == .satellite {
+            return "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        }
         let service: String
         switch self {
         case .hybrid: service = "USGSImageryTopo"
         case .imagery: service = "USGSImageryOnly"
         case .topo: service = "USGSTopo"
         case .relief: service = "USGSShadedReliefOnly"
+        case .satellite: service = ""
         }
         return "https://basemap.nationalmap.gov/arcgis/rest/services/\(service)/MapServer/tile/{z}/{y}/{x}"
     }
+
+    /// Native max zoom the source serves sharply. USGS imagery stops at 16.
+    var maxNativeZoom: Int { self == .satellite ? 19 : 16 }
+
+    /// Required attribution, shown on the map. Esri requires credit.
+    var attribution: String? { self == .satellite ? "Imagery © Esri, Maxar, Earthstar Geographics" : nil }
+
+    /// Esri tiles cannot be cached, so offline packs fall back to USGS imagery.
+    var offlineBasemap: Basemap { self == .satellite ? .imagery : self }
 }
 
 enum RegionStyle {
@@ -56,9 +73,11 @@ enum RegionStyle {
     /// an offline download should fetch. Overlays are local vector data and do
     /// not need caching.
     static func basemapStyleURL(_ basemap: Basemap) -> URL {
+        // Esri imagery cannot be cached, so offline always uses a USGS layer.
+        let cacheable = basemap.offlineBasemap
         let style: [String: Any] = [
             "version": 8,
-            "sources": ["usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16]],
+            "sources": ["usgs": ["type": "raster", "tiles": [cacheable.tileURL], "tileSize": 256, "maxzoom": 16]],
             "layers": [["id": "usgs", "type": "raster", "source": "usgs"]],
         ]
         let url = FileManager.default.temporaryDirectory
@@ -93,7 +112,8 @@ enum RegionStyle {
         return [
             "version": 8,
             "sources": [
-                "usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16],
+                "usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256,
+                         "maxzoom": basemap.maxNativeZoom, "attribution": basemap.attribution ?? ""],
                 // USGS 3DEP slope, computed live and colorized (green flat -> red steep).
                 // WMS-style: MapLibre substitutes the tile bbox. Online-only overlay.
                 "slope": ["type": "raster", "tileSize": 256, "tiles": [

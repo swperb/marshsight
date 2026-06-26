@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var showDestinationSearch = false
     @State private var showAR = false
     @AppStorage("acceptedSafetyDisclaimer") private var acceptedSafety = false
-    @AppStorage("basemap") private var basemap: Basemap = .hybrid
+    @AppStorage("basemap") private var basemap: Basemap = .satellite
     @AppStorage("parkedLat") private var parkedLat = 0.0
     @AppStorage("parkedLon") private var parkedLon = 0.0
     @AppStorage("hasParked") private var hasParked = false

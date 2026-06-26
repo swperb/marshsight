@@ -65,9 +65,9 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         map.delegate = context.coordinator
         map.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         map.showsUserLocation = true
-        // USGS public imagery is sharp only to ~z16; cap zoom so it never
-        // overzooms into a blurry mess. Vector overlays stay crisp regardless.
-        map.maximumZoomLevel = 16.5
+        // Cap zoom at the basemap's sharp limit so it never overzooms into blur
+        // (USGS imagery stops at z16; Esri satellite is sharp to z19).
+        map.maximumZoomLevel = Double(basemap.maxNativeZoom) + 0.5
         map.userTrackingMode = .follow
         map.allowsScrolling = interactive
         map.allowsZooming = interactive
@@ -103,6 +103,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         if styleToken != coord.lastToken {
             coord.lastToken = styleToken
             coord.styleLoaded = false
+            uiView.maximumZoomLevel = Double(basemap.maxNativeZoom) + 0.5
             uiView.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         } else {
             coord.applyDynamicSources()
