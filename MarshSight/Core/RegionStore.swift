@@ -16,6 +16,9 @@ struct LoadedRegion: Equatable {
     let parcels: [Parcel]
     let trails: [[CLLocationCoordinate2D]]
     let huntingUnits: [HuntingUnit]
+    /// True when fetched live around the user (online), false when a deliberate
+    /// offline download.
+    var isLive = false
 
     var gaugeMarkers: [MarkerFeature] { gauges.map { $0.asMarkerFeature() } }
 
@@ -81,12 +84,57 @@ final class RegionStore: ObservableObject {
     func download(name: String, center: CLLocationCoordinate2D, radiusKm: Double = 40) async {
         isWorking = true
         defer { isWorking = false }
+        let pack = await buildPack(name: name, center: center, radiusKm: radiusKm)
+        persist(pack)
+        active = loaded(from: pack)
+        UserDefaults.standard.set(pack.id, forKey: "activeRegionID")
+        status = nil
+    }
 
+    private var lastAutoCenter: CLLocationCoordinate2D?
+    private var autoLoading = false
+
+    /// Live, nationwide coverage: fetch the layers around wherever the user is,
+    /// refreshing as they move, so the map works anywhere without downloading a
+    /// region first. Offline, the fetches return nothing and we keep the current
+    /// region untouched. Deliberate offline downloads are respected.
+    func autoLoadIfNeeded(around center: CLLocationCoordinate2D) async {
+        guard !autoLoading, !isWorking else { return }
+        let refresh: Bool
+        if let a = active, a.isLive {
+            refresh = GeoMath.distance(a.center, center) > 20_000
+        } else if active == nil {
+            refresh = true
+        } else {
+            // An offline pack is active: refresh to live the first time we have a
+            // fix (online) so stale packs don't hide current data.
+            refresh = lastAutoCenter == nil || GeoMath.distance(lastAutoCenter!, center) > 20_000
+        }
+        guard refresh else { return }
+
+        autoLoading = true
+        defer { autoLoading = false }
+        if active == nil { status = "Loading the area around you..." }
+        let pack = await buildPack(name: "", center: center, radiusKm: 40)
+        let region = loaded(from: pack, isLive: true)
+        // Only take over if we actually got data (i.e. we have signal). Offline,
+        // the fetches come back empty and we leave the existing region alone.
+        let hasData = !region.gauges.isEmpty || !region.publicLands.isEmpty
+            || !region.huntingUnits.isEmpty || !region.riverLines.isEmpty
+        if hasData {
+            active = region
+            lastAutoCenter = center
+        }
+        status = nil
+    }
+
+    /// Build (but do not persist) a region pack for a bounded area.
+    private func buildPack(name: String, center: CLLocationCoordinate2D, radiusKm: Double) async -> RegionPack {
         let placemark = await reversePlacemark(center)
         let resolvedName = name.isEmpty
             ? (placemark?.locality ?? placemark?.subAdministrativeArea ?? placemark?.administrativeArea ?? "My Area")
             : name
-        status = "Downloading \(resolvedName)..."
+        status = status ?? "Loading \(resolvedName)..."
 
         async let g = try? await USGSWaterService.nearbyGauges(center: center, radiusKm: max(radiusKm, 40))
         async let r = try? await NHDService.riverLines(center: center, radiusKm: radiusKm, maxLines: 1500)
@@ -132,7 +180,7 @@ final class RegionStore: ObservableObject {
                         rings: u.rings.map { GeometrySimplify.simplify($0, toleranceMeters: landTol, refLat: refLat) })
         }
 
-        let pack = RegionPack(
+        return RegionPack(
             id: UUID().uuidString, name: resolvedName, savedAt: Date(),
             centerLat: center.latitude, centerLon: center.longitude,
             gauges: gauges,
@@ -143,11 +191,6 @@ final class RegionStore: ObservableObject {
             trails: RegionPack.encode(lines: simpTrails),
             huntingUnits: RegionPack.encode(units: simpUnits)
         )
-
-        persist(pack)
-        active = loaded(from: pack)
-        UserDefaults.standard.set(pack.id, forKey: "activeRegionID")
-        status = nil
     }
 
     func activate(_ id: String) {
@@ -169,7 +212,7 @@ final class RegionStore: ObservableObject {
 
     // MARK: - Persistence
 
-    private func loaded(from pack: RegionPack) -> LoadedRegion {
+    private func loaded(from pack: RegionPack, isLive: Bool = false) -> LoadedRegion {
         LoadedRegion(
             id: pack.id, name: pack.name, savedAt: pack.savedAt,
             center: CLLocationCoordinate2D(latitude: pack.centerLat, longitude: pack.centerLon),
@@ -179,7 +222,8 @@ final class RegionStore: ObservableObject {
             publicLands: RegionPack.decode(lands: pack.lands),
             parcels: RegionPack.decode(parcels: pack.parcels),
             trails: RegionPack.decode(lines: pack.trails),
-            huntingUnits: RegionPack.decode(units: pack.huntingUnits)
+            huntingUnits: RegionPack.decode(units: pack.huntingUnits),
+            isLive: isLive
         )
     }
 

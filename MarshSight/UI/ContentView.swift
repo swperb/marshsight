@@ -36,11 +36,15 @@ struct ContentView: View {
             } else if !isAuthorized {
                 permissionPrompt
             } else if regions.active == nil {
-                RegionPickerView(store: regions,
-                                 offline: offline,
-                                 currentLocation: location.fix?.coordinate,
-                                 basemap: basemap,
-                                 allowDismiss: false)
+                if location.fix != nil {
+                    loadingArea
+                } else {
+                    RegionPickerView(store: regions,
+                                     offline: offline,
+                                     currentLocation: location.fix?.coordinate,
+                                     basemap: basemap,
+                                     allowDismiss: false)
+                }
             } else if showAR {
                 // Swap to AR entirely (don't keep the home map rendering behind it).
                 ARExperienceView(location: location,
@@ -62,6 +66,7 @@ struct ContentView: View {
             engine.update(with: f)
             updateContext(at: f.coordinate)
             recorder.record(f)
+            Task { await regions.autoLoadIfNeeded(around: f.coordinate) }
             Task { await weather.refreshIfStale(at: f.coordinate) }
             Task { await tides.refreshIfStale(at: f.coordinate) }
             Task { await contributions.fetchNearby(f.coordinate) }
@@ -171,6 +176,19 @@ struct ContentView: View {
         currentLand = regions.currentLand(at: c)
         currentParcel = regions.active?.currentParcel(at: c)
         currentUnit = regions.active?.currentUnit(at: c)
+    }
+
+    private var loadingArea: some View {
+        VStack(spacing: 16) {
+            ProgressView().scaleEffect(1.4).tint(.cyan)
+            Text(regions.status ?? "Loading the area around you...")
+                .font(.headline).foregroundStyle(.white)
+            Text("Public land, hunting units, water, and trails near you.")
+                .font(.subheadline).foregroundStyle(.white.opacity(0.6))
+                .multilineTextAlignment(.center).padding(.horizontal, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
     }
 
     private var permissionPrompt: some View {
