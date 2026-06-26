@@ -21,7 +21,7 @@ competitor's product, and we never access onX's service in any form.
 | River flow and gauge height | USGS Water Data / USACE | Public domain | USGS Water Services API |
 | Public land boundaries | USGS PAD-US, BLM, state GIS | Public domain | PAD-US / agency open data portals |
 | Trails | USFS National Forest System Trails | Public domain | USFS EDW ArcGIS REST (EDW_TrailNFSPublish) |
-| Hunting units (game zones / WMAs) | State wildlife agencies (per state) | Public domain / public records | Direct ArcGIS REST per state. AR/MS: deer zones (AGFC, MDWFP). LA: LDWF WMAs/refuges. MO: MDC conservation areas (MSDIS). TN: TWRA hunting lands. GA: GA DNR WRD WMAs. FL: FWC WMAs. TX: TPWD WMAs. OK: ODWC WMAs. AL: WMAs (hosted public-record copy; official DCNR server unreachable) |
+| Hunting units (game zones / WMAs) | State wildlife agencies (per state) | Public domain / public records | Direct ArcGIS REST per state. AR/MS: deer zones (AGFC, MDWFP). LA: LDWF WMAs/refuges. MO: MDC conservation areas (MSDIS). TN: TWRA hunting lands. GA: GA DNR WRD WMAs. FL: FWC WMAs. TX: TPWD WMAs. OK: ODWC WMAs. KS: KDWPT wildlife areas. NE: Game & Parks deer units. IA: Iowa DNR WMAs. IN: IN DNR managed lands. KY: KDFWR public hunting areas. AL: WMAs (hosted public-record copy; official DCNR server unreachable). (IL has no open state hunting-land layer yet.) |
 | Private parcel boundaries + owner names | Free statewide state GIS (per state) | Public records / open state data | Direct ArcGIS REST query per state (AR/WA/NY/MT/VT verified) |
 | Weather (wind, temp, pressure) | Open-Meteo | Free, CC-BY 4.0, no key | Direct API for the user's coordinate |
 | Moon phase | Computed locally (synodic month) | n/a, no source | On-device calculation, no network |

@@ -73,7 +73,27 @@ enum HuntingUnitsService {
         // OK: ODWC public WMA boundaries.
         "OK": Source(
             url: "https://services1.arcgis.com/jRf8jjFwxedITdFe/arcgis/rest/services/Public_WMA_Boundaries/FeatureServer/1/query",
-            nameField: "WMANAME", kind: "WMA")
+            nameField: "WMANAME", kind: "WMA"),
+        // KS: Kansas Dept of Wildlife, Parks & Tourism protected areas (wildlife areas).
+        "KS": Source(
+            url: "https://services1.arcgis.com/q2CglofYX6ACNEeu/arcgis/rest/services/protected_areas/FeatureServer/0/query",
+            nameField: "Unit_Name", kind: "Public Land"),
+        // NE: Nebraska Game & Parks deer management units.
+        "NE": Source(
+            url: "https://services5.arcgis.com/IOshH1zLrIieqrNk/arcgis/rest/services/AOSC_Deer_Units/FeatureServer/0/query",
+            nameField: "UnitName", kind: "Deer Unit"),
+        // IA: Iowa DNR Wildlife Management Areas.
+        "IA": Source(
+            url: "https://services.arcgis.com/8lRhdTsQyJpO52F1/arcgis/rest/services/Wildlife_Management_Area_IA_View/FeatureServer/0/query",
+            nameField: "NAME", kind: "WMA"),
+        // IN: Indiana DNR managed lands (fish & wildlife areas, public access sites).
+        "IN": Source(
+            url: "https://gisdata.in.gov/server/rest/services/Hosted/ManagedLands_DNR_Open/FeatureServer/0/query",
+            nameField: "unitname", kind: "DNR Property"),
+        // KY: KDFWR public hunting areas.
+        "KY": Source(
+            url: "https://services3.arcgis.com/ghsX9CKghMvyYjBU/arcgis/rest/services/Ky_KDFWR_PublicHuntingAreas_WM_gdb/FeatureServer/0/query",
+            nameField: "AREANAME", kind: "Public Hunting Area")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
