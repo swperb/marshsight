@@ -39,10 +39,11 @@ struct MapHomeView: View {
     @AppStorage("layer.water") private var showWater = true
     @AppStorage("layer.trails") private var showTrails = true
     @AppStorage("layer.slope") private var showSlope = false
+    @AppStorage("layer.scent") private var showScent = false
 
     private var layerVisibility: LayerVisibility {
         .init(land: showLand, units: showUnits, parcels: showParcels,
-              water: showWater, trails: showTrails, slope: showSlope)
+              water: showWater, trails: showTrails, slope: showSlope, scent: showScent)
     }
 
     var body: some View {
@@ -54,6 +55,8 @@ struct MapHomeView: View {
                           basemap: basemap,
                           navPath: engine.remainingPath,
                           layers: layerVisibility,
+                          windFromDegrees: weather?.windFromDegrees,
+                          windSpeedMph: weather?.windSpeedMph,
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -353,6 +356,7 @@ struct MapHomeView: View {
             Toggle(isOn: $showWater) { Label("Water", systemImage: "drop.fill") }
             Toggle(isOn: $showTrails) { Label("Trails", systemImage: "figure.walk") }
             Toggle(isOn: $showSlope) { Label("Slope angle (online)", systemImage: "triangle.fill") }
+            Toggle(isOn: $showScent) { Label("Scent cone (wind)", systemImage: "wind") }
         } label: {
             Image(systemName: "square.3.layers.3d")
                 .font(.system(size: 17, weight: .semibold))

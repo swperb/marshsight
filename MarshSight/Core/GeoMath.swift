@@ -28,6 +28,19 @@ enum GeoMath {
         return SIMD2(east, north)
     }
 
+    /// The coordinate reached by traveling `meters` from `origin` along
+    /// `bearingDegrees` (clockwise from true north). Flat-earth approximation,
+    /// accurate over the short ranges we use (hundreds of meters).
+    static func destination(from origin: CLLocationCoordinate2D,
+                            bearingDegrees: Double, meters: Double) -> CLLocationCoordinate2D {
+        let m = metersPerDegree(atLatitude: origin.latitude)
+        let rad = bearingDegrees * .pi / 180
+        let north = cos(rad) * meters
+        let east = sin(rad) * meters
+        return CLLocationCoordinate2D(latitude: origin.latitude + north / m.latM,
+                                      longitude: origin.longitude + east / m.lonM)
+    }
+
     /// Great-circle distance in meters between two coordinates (haversine).
     static func distance(_ a: CLLocationCoordinate2D, _ b: CLLocationCoordinate2D) -> Double {
         let dLat = (b.latitude - a.latitude) * .pi / 180

@@ -104,6 +104,7 @@ enum RegionStyle {
                 "rivers": geojsonSource(riverFC),
                 "trails": geojsonSource(trailFC),
                 "points": geojsonSource(pointFC),
+                "scent": geojsonSource(featureCollection([])),
                 "track": geojsonSource(featureCollection([])),
                 "nav": geojsonSource(featureCollection([])),
                 "dest": geojsonSource(featureCollection([])),
@@ -135,6 +136,10 @@ enum RegionStyle {
                  "paint": ["line-color": "#E0903C", "line-width": 2, "line-dasharray": [2, 1.5]]],
                 ["id": "track-line", "type": "line", "source": "track",
                  "paint": ["line-color": "#FFD60A", "line-width": 2.5]],
+                ["id": "scent-fill", "type": "fill", "source": "scent",
+                 "layout": ["visibility": "none"],
+                 "paint": ["fill-color": "#FB923C", "fill-opacity": 0.28,
+                           "fill-outline-color": "#F97316"]],
                 ["id": "points", "type": "circle", "source": "points",
                  "paint": ["circle-radius": 5, "circle-color": ["get", "color"],
                            "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5]],
@@ -151,6 +156,26 @@ enum RegionStyle {
     /// The blue trackline through the planned path (user + remaining waypoints).
     static func navLineGeoJSON(_ coords: [CLLocationCoordinate2D]) -> [String: Any] {
         featureCollection(coords.count > 1 ? [lineString(coords)] : [])
+    }
+
+    /// A downwind scent cone from the user's position: where a deer downwind
+    /// would smell you. Spreads from the point along the direction the wind
+    /// carries (opposite the direction it blows from), longer in stronger wind.
+    static func scentConeGeoJSON(center: CLLocationCoordinate2D?,
+                                 windFromDegrees: Double?, windSpeedMph: Double?) -> [String: Any] {
+        guard let center, let from = windFromDegrees else { return featureCollection([]) }
+        let downwind = (from + 180).truncatingRemainder(dividingBy: 360)
+        let speed = max(windSpeedMph ?? 5, 2)
+        let length = min(120 + speed * 25, 600)   // meters, scaled by wind speed
+        let half = 22.0                            // cone half-angle in degrees
+        let steps = 10
+        var ring: [CLLocationCoordinate2D] = [center]
+        for i in 0...steps {
+            let brg = downwind - half + (2 * half) * Double(i) / Double(steps)
+            ring.append(GeoMath.destination(from: center, bearingDegrees: brg, meters: length))
+        }
+        ring.append(center)
+        return featureCollection([polygon(ring)])
     }
 
     /// The destination point marker.
