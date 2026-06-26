@@ -258,6 +258,10 @@ enum RegionStyle {
         case .access: return "#FF9500"
         case .blind: return "#AF52DE"
         case .gauge: return "#30B0C7"
+        case .feeder: return "#A0522D"
+        case .camera: return "#3B82F6"
+        case .foodPlot: return "#4ADE80"
+        case .gate: return "#9CA3AF"
         }
     }
 }

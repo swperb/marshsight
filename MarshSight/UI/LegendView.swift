@@ -16,6 +16,10 @@ struct LegendView: View {
                     dot("#FFD60A", "Launch / ramp", "A boat ramp or put-in")
                     dot("#FF9500", "Access point", "Access to land or water")
                     dot("#AF52DE", "Blind / stand", "A hunting blind or stand")
+                    dot("#A0522D", "Feeder", "A game feeder")
+                    dot("#3B82F6", "Trail camera", "A trail camera")
+                    dot("#4ADE80", "Food plot", "A planted food plot")
+                    dot("#9CA3AF", "Gate", "A gate or access control")
                 }
                 Section("Land & boundaries") {
                     swatch("#34C759", filled: true, "Public land — open access")

@@ -479,6 +479,10 @@ struct MapHomeView: View {
         case "launch": return "Launch / ramp"
         case "access": return "Access point"
         case "blind": return "Blind / stand"
+        case "feeder": return "Feeder"
+        case "camera": return "Trail camera"
+        case "foodPlot": return "Food plot"
+        case "gate": return "Gate"
         default: return "Marker"
         }
     }
@@ -489,6 +493,10 @@ struct MapHomeView: View {
         case "hazard": return "exclamationmark.triangle.fill"
         case "launch": return "ferry.fill"
         case "blind": return "scope"
+        case "feeder": return "cylinder.fill"
+        case "camera": return "camera.fill"
+        case "foodPlot": return "leaf.fill"
+        case "gate": return "lock.fill"
         default: return "mappin.circle.fill"
         }
     }

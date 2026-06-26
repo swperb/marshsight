@@ -11,8 +11,12 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
         case hazard          // stump field, sandbar, snag, shallow
         case launch          // boat ramp / put-in, the "home" point
         case access          // public access boundary point of interest
-        case blind           // duck blind or stand
+        case blind           // duck blind or deer stand
         case gauge           // live USGS river/lake gauge (stage, discharge)
+        case feeder          // game feeder
+        case camera          // trail camera
+        case foodPlot        // planted food plot
+        case gate            // gate / access control on private land
 
         var symbol: String {
             switch self {
@@ -23,6 +27,10 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
             case .access: return "mappin.and.ellipse"
             case .blind: return "scope"
             case .gauge: return "gauge.with.dots.needle.bottom.50percent"
+            case .feeder: return "cylinder.fill"
+            case .camera: return "camera.fill"
+            case .foodPlot: return "leaf.fill"
+            case .gate: return "lock.fill"
             }
         }
 
@@ -35,6 +43,10 @@ struct MarkerFeature: Identifiable, Codable, Equatable {
             case .access: return .orange
             case .blind: return .purple
             case .gauge: return .teal
+            case .feeder: return .brown
+            case .camera: return .blue
+            case .foodPlot: return Color(red: 0.3, green: 0.8, blue: 0.3)
+            case .gate: return .gray
             }
         }
     }

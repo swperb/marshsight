@@ -8,6 +8,7 @@ import Combine
 struct Contribution: Identifiable, Codable, Equatable {
     enum Kind: String, Codable, CaseIterable {
         case hazard, waypoint, blind, ramp, harvest, fish, note
+        case feeder, camera, foodPlot, gate
 
         var title: String {
             switch self {
@@ -18,6 +19,10 @@ struct Contribution: Identifiable, Codable, Equatable {
             case .harvest: return "Harvest"
             case .fish: return "Catch"
             case .note: return "Note"
+            case .feeder: return "Feeder"
+            case .camera: return "Trail Camera"
+            case .foodPlot: return "Food Plot"
+            case .gate: return "Gate"
             }
         }
 
@@ -27,6 +32,10 @@ struct Contribution: Identifiable, Codable, Equatable {
             case .hazard: return .hazard
             case .blind: return .blind
             case .ramp: return .access
+            case .feeder: return .feeder
+            case .camera: return .camera
+            case .foodPlot: return .foodPlot
+            case .gate: return .gate
             case .waypoint, .harvest, .fish, .note: return .waypoint
             }
         }
