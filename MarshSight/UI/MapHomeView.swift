@@ -25,6 +25,7 @@ struct MapHomeView: View {
     var onReport: () -> Void
     var onSwitchRegion: () -> Void
     var onSearch: () -> Void
+    var onNavigateTo: (NavDestination) -> Void
     var onMarkTruck: () -> Void
     var onReturnToTruck: () -> Void
     var onRetrace: () -> Void
@@ -35,6 +36,7 @@ struct MapHomeView: View {
     @State private var recenterTick = 0
     @State private var showFeedback = false
     @State private var showLogbook = false
+    @State private var selectedMarker: SelectedMarker?
 
     private var tideNote: String? {
         tides.next.map { "\($0.isHigh ? "High" : "Low") \(Self.tideTimeFmt.string(from: $0.time))" }
@@ -66,6 +68,7 @@ struct MapHomeView: View {
                           layers: layerVisibility,
                           windFromDegrees: weather?.windFromDegrees,
                           windSpeedMph: weather?.windSpeedMph,
+                          onSelectMarker: { selectedMarker = $0 },
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -76,7 +79,8 @@ struct MapHomeView: View {
                 if let t = tides.next { tideStrip(t) }
                 searchBar
                 Spacer()
-                if engine.isNavigating { navBanner } else { contextCard }
+                if let m = selectedMarker { markerCard(m) }
+                else if engine.isNavigating { navBanner } else { contextCard }
                 enterARButton
             }
             .padding(.horizontal, 14)
@@ -431,6 +435,57 @@ struct MapHomeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 6)
+    }
+
+    private func markerCard(_ m: SelectedMarker) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: markerIcon(m.kind)).font(.title3).foregroundStyle(.cyan)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(m.title).font(.headline).lineLimit(2)
+                    Text(markerKindLabel(m.kind)).font(.caption).foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer()
+                Button { selectedMarker = nil } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title3).foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            Button {
+                onNavigateTo(NavDestination(name: m.title,
+                                            latitude: m.coordinate.latitude, longitude: m.coordinate.longitude))
+                selectedMarker = nil
+            } label: {
+                Label("Take me here", systemImage: "location.north.line.fill")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
+                    .background(.cyan, in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.black)
+            }
+        }
+        .padding(14)
+        .background(.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 18))
+        .foregroundStyle(.white)
+    }
+
+    private func markerKindLabel(_ kind: String) -> String {
+        switch kind {
+        case "gauge": return "River gauge"
+        case "waypoint": return "Saved spot"
+        case "channelMarker": return "Channel marker"
+        case "hazard": return "Hazard"
+        case "launch": return "Launch / ramp"
+        case "access": return "Access point"
+        case "blind": return "Blind / stand"
+        default: return "Marker"
+        }
+    }
+
+    private func markerIcon(_ kind: String) -> String {
+        switch kind {
+        case "gauge": return "gauge.with.dots.needle.bottom.50percent"
+        case "hazard": return "exclamationmark.triangle.fill"
+        case "launch": return "ferry.fill"
+        case "blind": return "scope"
+        default: return "mappin.circle.fill"
+        }
     }
 
     private func pill<C: View>(@ViewBuilder _ content: () -> C) -> some View {

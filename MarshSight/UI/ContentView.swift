@@ -90,6 +90,7 @@ struct ContentView: View {
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true },
                     onSearch: { showDestinationSearch = true },
+                    onNavigateTo: startNavigation,
                     onMarkTruck: markTruck,
                     onReturnToTruck: returnToTruck,
                     onRetrace: retraceSteps,

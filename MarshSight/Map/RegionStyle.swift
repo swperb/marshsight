@@ -83,7 +83,8 @@ enum RegionStyle {
         let trailFC = featureCollection((region?.trails ?? []).map { lineString($0) })
         let points = (region?.gaugeMarkers ?? []) + contributions
         let pointFC = featureCollection(points.map {
-            point($0.coordinate, props: ["color": hex($0.kind)])
+            point($0.coordinate, props: ["color": hex($0.kind), "title": $0.name, "kind": $0.kind.rawValue,
+                                         "lat": $0.latitude, "lon": $0.longitude])
         })
 
         let accessColor: [Any] = ["match", ["get", "access"],
@@ -136,7 +137,10 @@ enum RegionStyle {
                 ["id": "parcels-line", "type": "line", "source": "parcels",
                  "paint": ["line-color": "#F59E0B", "line-opacity": 0.55, "line-width": 0.7]],
                 ["id": "rivers-line", "type": "line", "source": "rivers",
-                 "paint": ["line-color": "#3B82F6", "line-opacity": 0.7, "line-width": 2]],
+                 "layout": ["line-cap": "round", "line-join": "round"],
+                 "paint": ["line-color": "#4DA6FF", "line-opacity": 0.8,
+                           "line-width": ["interpolate", ["linear"], ["zoom"],
+                                          9, 0.25, 12, 0.7, 14, 1.4, 17, 3.0]]],
                 ["id": "trails-line", "type": "line", "source": "trails",
                  "layout": ["line-cap": "round"],
                  "paint": ["line-color": "#E0903C", "line-width": 2, "line-dasharray": [2, 1.5]]],
@@ -147,8 +151,8 @@ enum RegionStyle {
                  "paint": ["fill-color": "#FB923C", "fill-opacity": 0.28,
                            "fill-outline-color": "#F97316"]],
                 ["id": "points", "type": "circle", "source": "points",
-                 "paint": ["circle-radius": 5, "circle-color": ["get", "color"],
-                           "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5]],
+                 "paint": ["circle-radius": 6, "circle-color": ["get", "color"],
+                           "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 2]],
                 ["id": "nav-line", "type": "line", "source": "nav",
                  "layout": ["line-cap": "round", "line-join": "round"],
                  "paint": ["line-color": "#0A84FF", "line-width": 5, "line-opacity": 0.95]],
@@ -198,7 +202,10 @@ enum RegionStyle {
     /// GeoJSON for gauge + contribution points, applied to the "points" source
     /// at runtime so new reports appear without rebuilding the whole style.
     static func pointsGeoJSON(_ features: [MarkerFeature]) -> [String: Any] {
-        featureCollection(features.map { point($0.coordinate, props: ["color": hex($0.kind)]) })
+        featureCollection(features.map {
+            point($0.coordinate, props: ["color": hex($0.kind), "title": $0.name, "kind": $0.kind.rawValue,
+                                         "lat": $0.latitude, "lon": $0.longitude])
+        })
     }
 
     // MARK: - GeoJSON builders

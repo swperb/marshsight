@@ -8,7 +8,15 @@ export const metadata: Metadata = {
 export default function Privacy() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-16 text-foreground">
-      <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
+      <a
+        href="/"
+        className="text-sm font-medium text-amber-400 transition hover:text-amber-300"
+      >
+        ← Back to MarshSight
+      </a>
+      <h1 className="mt-6 font-slab text-4xl font-bold tracking-tight">
+        Privacy Policy
+      </h1>
       <p className="mt-2 text-sm text-foreground/55">Last updated: June 2026</p>
 
       <div className="mt-8 space-y-8 leading-relaxed text-foreground/85">
@@ -19,7 +27,7 @@ export default function Privacy() {
         </p>
 
         <section>
-          <h2 className="text-xl font-semibold">What the app uses</h2>
+          <h2 className="font-slab text-xl font-semibold">What the app uses</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>
               <strong>Location (GPS and compass).</strong> Used on your device to
@@ -41,7 +49,7 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">What you can choose to share</h2>
+          <h2 className="font-slab text-xl font-semibold">What you can choose to share</h2>
           <p className="mt-3">
             Contributions (waypoints, hazards, blinds, ramps, harvest and catch
             notes) are private by default and stay on your device. You can choose
@@ -53,7 +61,7 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">What we do not do</h2>
+          <h2 className="font-slab text-xl font-semibold">What we do not do</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>No advertising or third-party ad tracking.</li>
             <li>No selling of personal data.</li>
@@ -65,7 +73,7 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">Data sources</h2>
+          <h2 className="font-slab text-xl font-semibold">Data sources</h2>
           <p className="mt-3">
             Map layers come from public-domain government sources (USGS, NOAA,
             PAD-US, USFS). The app uses no onX data.
@@ -73,12 +81,12 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">Your control and contact</h2>
+          <h2 className="font-slab text-xl font-semibold">Your control and contact</h2>
           <p className="mt-3">
             Delete the app to remove all local data, including private
             contributions stored on your device. To request deletion of public
             contributions or your waitlist email, contact{" "}
-            <a className="text-moss-400 underline" href="mailto:stephenproctor291@gmail.com">
+            <a className="text-amber-400 underline" href="mailto:stephenproctor291@gmail.com">
               stephenproctor291@gmail.com
             </a>
             .

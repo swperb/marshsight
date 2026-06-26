@@ -20,6 +20,14 @@ struct LayerVisibility: Equatable {
     var radar = false   // NEXRAD weather radar, online-only, off by default
 }
 
+/// A marker the user tapped on the map, surfaced as a callout card.
+struct SelectedMarker: Identifiable {
+    let id = UUID()
+    let title: String
+    let kind: String
+    let coordinate: CLLocationCoordinate2D
+}
+
 struct RegionMapView: UIViewRepresentable, Equatable {
 
     let region: LoadedRegion?
@@ -31,6 +39,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     var layers: LayerVisibility = .init()
     var windFromDegrees: Double? = nil
     var windSpeedMph: Double? = nil
+    var onSelectMarker: ((SelectedMarker?) -> Void)? = nil
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -56,6 +65,9 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         map.delegate = context.coordinator
         map.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         map.showsUserLocation = true
+        // USGS public imagery is sharp only to ~z16; cap zoom so it never
+        // overzooms into a blurry mess. Vector overlays stay crisp regardless.
+        map.maximumZoomLevel = 16.5
         map.userTrackingMode = .follow
         map.allowsScrolling = interactive
         map.allowsZooming = interactive
@@ -63,6 +75,11 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         map.allowsTilting = interactive
         if let c = region?.center {
             map.setCenter(c, zoomLevel: 13, animated: false)
+        }
+        if interactive {
+            let tap = UITapGestureRecognizer(target: context.coordinator,
+                                             action: #selector(Coordinator.handleTap(_:)))
+            map.addGestureRecognizer(tap)
         }
         context.coordinator.map = map
         context.coordinator.lastToken = styleToken
@@ -81,6 +98,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.layers = layers
         coord.windFromDegrees = windFromDegrees
         coord.windSpeedMph = windSpeedMph
+        coord.onSelectMarker = onSelectMarker
 
         if styleToken != coord.lastToken {
             coord.lastToken = styleToken
@@ -109,6 +127,23 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         var layers = LayerVisibility()
         var windFromDegrees: Double?
         var windSpeedMph: Double?
+        var onSelectMarker: ((SelectedMarker?) -> Void)?
+
+        /// Tap a marker dot to surface what it is and a way to navigate there.
+        /// Tapping empty map clears the callout.
+        @objc func handleTap(_ g: UITapGestureRecognizer) {
+            guard let map = map else { return }
+            let pt = g.location(in: map)
+            let feats = map.visibleFeatures(at: pt, styleLayerIdentifiers: ["points"])
+            guard let f = feats.first else { onSelectMarker?(nil); return }
+            let a = f.attributes
+            let title = (a["title"] as? String) ?? "Marker"
+            let kind = (a["kind"] as? String) ?? ""
+            let lat = (a["lat"] as? Double) ?? f.coordinate.latitude
+            let lon = (a["lon"] as? Double) ?? f.coordinate.longitude
+            onSelectMarker?(SelectedMarker(title: title, kind: kind,
+                                           coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon)))
+        }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             styleLoaded = true
