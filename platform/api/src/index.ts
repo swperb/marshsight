@@ -11,7 +11,7 @@ import { fetchGauges } from "./sources/usgs";
 import { fetchRivers, fetchLakes } from "./sources/nhd";
 import { fetchPublicLands } from "./sources/padus";
 import { addContribution, nearbyContributions, addWaitlistEmail, vote as castVote, Contribution } from "./store";
-import { addPost, recentPosts, addCameraPhoto, cameraPhotos, uploadPhoto, supabaseEnabled } from "./supabase";
+import { addPost, recentPosts, addCameraPhoto, cameraPhotos, uploadPhoto, reportContent, supabaseEnabled } from "./supabase";
 import { randomUUID } from "node:crypto";
 
 const app = express();
@@ -183,6 +183,21 @@ app.get("/v1/feed", asyncRoute(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 200);
   const posts = supabaseEnabled() ? await recentPosts(limit) : [];
   res.json({ posts });
+}));
+
+// Report a feed post or community spot. Three distinct reporters auto-hide the
+// content pending review (App Store Guideline 1.2: objectionable-content flow).
+app.post("/v1/reports", asyncRoute(async (req, res) => {
+  const b = req.body ?? {};
+  const type = String(b.contentType ?? "");
+  const id = String(b.contentId ?? "");
+  if ((type !== "post" && type !== "contribution") || !id)
+    throw new BadRequest("contentType ('post'|'contribution') and contentId required");
+  if (supabaseEnabled()) await reportContent(
+    type, id,
+    b.reason ? String(b.reason).slice(0, 200) : undefined,
+    b.reporterDevice ? String(b.reporterDevice) : undefined);
+  res.json({ ok: true });
 }));
 
 // ---- Trail-camera ingest ----

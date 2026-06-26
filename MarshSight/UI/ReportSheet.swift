@@ -13,6 +13,27 @@ struct ReportSheet: View {
     @State private var name = ""
     @State private var note = ""
     @State private var visibility: Contribution.Visibility = .private
+    @AppStorage("acceptedCommunityRules") private var acceptedRules = false
+    @State private var showRules = false
+    @State private var showBlockedNotice = false
+
+    private func attemptSave() {
+        guard coordinate != nil else { return }
+        // Public spots are user-generated content seen by others: filter and gate.
+        if visibility == .public {
+            if ContentFilter.isObjectionable(name) || ContentFilter.isObjectionable(note) {
+                showBlockedNotice = true
+                return
+            }
+            guard acceptedRules else { showRules = true; return }
+        }
+        commit()
+    }
+
+    private func commit() {
+        onSave(kind, name, note, visibility)
+        dismiss()
+    }
 
     var body: some View {
         NavigationStack {
@@ -48,14 +69,17 @@ struct ReportSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        if let coordinate {
-                            onSave(kind, name, note, visibility)
-                        }
-                        dismiss()
-                    }
-                    .disabled(coordinate == nil)
+                    Button("Save") { attemptSave() }
+                        .disabled(coordinate == nil)
                 }
+            }
+            .sheet(isPresented: $showRules) {
+                CommunityRulesView { acceptedRules = true; commit() }
+            }
+            .alert("Can't post that", isPresented: $showBlockedNotice) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("The name or note contains language that isn't allowed on shared spots. Please edit it and try again.")
             }
         }
     }

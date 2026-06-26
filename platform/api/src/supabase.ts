@@ -49,6 +49,7 @@ export async function nearbyContributions(
   // Public, OR the caller's own private/group rows. Honey-hole safe.
   const own = deviceId ? `,and(device_id.eq.${deviceId})` : "";
   params.set("or", `(visibility.eq.public${own})`);
+  params.set("hidden", "eq.false");
   params.set("limit", "500");
 
   const res = await fetch(`${urlBase()}/rest/v1/contributions?${params}`, {
@@ -128,6 +129,7 @@ export async function addPost(p: FeedPost): Promise<void> {
 export async function recentPosts(limit = 100): Promise<FeedPost[]> {
   const params = new URLSearchParams();
   params.set("select", "id,kind,note,lat,lon,photo_url,temp_f,wind,moon,author,upvotes,created_at");
+  params.set("hidden", "eq.false");
   params.set("order", "created_at.desc");
   params.set("limit", String(limit));
   const res = await fetch(`${urlBase()}/rest/v1/posts?${params}`, {
@@ -191,4 +193,38 @@ export async function uploadPhoto(bytes: Uint8Array, contentType: string, path: 
   });
   if (!res.ok) return undefined;
   return `${urlBase()}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+// ---- UGC moderation (report + auto-hide) ----
+
+export async function reportContent(
+  contentType: "post" | "contribution", contentId: string,
+  reason: string | undefined, reporterDevice: string | undefined
+): Promise<void> {
+  // Record the report (one per reporter per content; duplicates ignored).
+  await fetch(`${urlBase()}/rest/v1/reports`, {
+    method: "POST",
+    headers: headers({ Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify({
+      content_type: contentType, content_id: contentId,
+      reason: reason ?? null, reporter_device: reporterDevice ?? null,
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  // Count distinct reporters and auto-hide once it crosses the threshold.
+  const q = new URLSearchParams();
+  q.set("select", "reporter_device");
+  q.set("content_type", `eq.${contentType}`);
+  q.set("content_id", `eq.${contentId}`);
+  const cres = await fetch(`${urlBase()}/rest/v1/reports?${q}`, {
+    headers: headers(), signal: AbortSignal.timeout(20000),
+  });
+  const count = cres.ok ? ((await cres.json()) as any[]).length : 1;
+  const table = contentType === "post" ? "posts" : "contributions";
+  await fetch(`${urlBase()}/rest/v1/${table}?id=eq.${contentId}`, {
+    method: "PATCH",
+    headers: headers({ Prefer: "return=minimal" }),
+    body: JSON.stringify({ report_count: count, hidden: count >= 3 }),
+    signal: AbortSignal.timeout(20000),
+  });
 }

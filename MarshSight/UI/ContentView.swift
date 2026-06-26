@@ -14,6 +14,7 @@ struct ContentView: View {
     @StateObject private var logbook = LogbookStore()
     @StateObject private var premium = PremiumStore()
     @StateObject private var feed = FeedStore()
+    @StateObject private var moderation = ModerationStore()
 
     @State private var showReport = false
     @State private var reportKind: Contribution.Kind = .hazard
@@ -96,6 +97,7 @@ struct ContentView: View {
                     logbook: logbook,
                     premium: premium,
                     feed: feed,
+                    moderation: moderation,
                     onEnterAR: { showAR = true },
                     onReport: { reportKind = .hazard; showReport = true },
                     onTagOwner: { reportKind = .owner; showReport = true },
@@ -126,6 +128,7 @@ struct ContentView: View {
                 DestinationSearchView(
                     center: location.fix?.coordinate ?? regions.active?.center,
                     contributions: contributions,
+                    moderation: moderation,
                     extraSpots: regions.active?.gaugeMarkers ?? [],
                     onSelect: startNavigation)
             }

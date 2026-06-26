@@ -6,8 +6,34 @@ import SwiftUI
 struct TrophyRoomView: View {
     @ObservedObject var store: LogbookStore
     @ObservedObject var feed: FeedStore
+    @ObservedObject var moderation: ModerationStore
     @Environment(\.dismiss) private var dismiss
     @AppStorage("feedName") private var feedName = ""
+    @AppStorage("acceptedCommunityRules") private var acceptedRules = false
+
+    @State private var showRules = false
+    @State private var showBlockedNotice = false
+    @State private var pendingShare: (entry: LogEntry, includeLocation: Bool)?
+
+    /// Run all the pre-flight gates before a post reaches the network: word
+    /// filter, then the one-time community-guidelines agreement.
+    private func requestShare(_ e: LogEntry, includeLocation: Bool) {
+        if ContentFilter.isObjectionable(e.note) || ContentFilter.isObjectionable(feedName) {
+            showBlockedNotice = true
+            return
+        }
+        guard acceptedRules else {
+            pendingShare = (e, includeLocation)
+            showRules = true
+            return
+        }
+        Task { await doShare(e, includeLocation: includeLocation) }
+    }
+
+    private func doShare(_ e: LogEntry, includeLocation: Bool) async {
+        await feed.share(e, photoData: photoData(e), includeLocation: includeLocation,
+                         author: feedName.isEmpty ? nil : feedName)
+    }
 
     var body: some View {
         NavigationStack {
@@ -26,6 +52,20 @@ struct TrophyRoomView: View {
             .navigationTitle("Trophy Room")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .sheet(isPresented: $showRules) {
+                CommunityRulesView {
+                    acceptedRules = true
+                    if let p = pendingShare {
+                        Task { await doShare(p.entry, includeLocation: p.includeLocation) }
+                        pendingShare = nil
+                    }
+                }
+            }
+            .alert("Can't share that", isPresented: $showBlockedNotice) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your note or display name contains language that isn't allowed in the community feed. Please edit it and try again.")
+            }
         }
     }
 
@@ -144,10 +184,10 @@ struct TrophyRoomView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contextMenu {
             Button {
-                Task { await feed.share(e, photoData: photoData(e), includeLocation: false, author: feedName.isEmpty ? nil : feedName) }
+                requestShare(e, includeLocation: false)
             } label: { Label("Share to Feed", systemImage: "square.and.arrow.up") }
             Button {
-                Task { await feed.share(e, photoData: photoData(e), includeLocation: true, author: feedName.isEmpty ? nil : feedName) }
+                requestShare(e, includeLocation: true)
             } label: { Label("Share with location", systemImage: "mappin.and.ellipse") }
         }
     }

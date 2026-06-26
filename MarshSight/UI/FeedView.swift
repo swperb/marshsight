@@ -4,15 +4,21 @@ import SwiftUI
 /// Optional location, conditions auto-stamped. The social front of MarshSight.
 struct FeedView: View {
     @ObservedObject var store: FeedStore
+    @ObservedObject var moderation: ModerationStore
     @Environment(\.dismiss) private var dismiss
+    @State private var reportTarget: FeedPost?
+
+    private var visiblePosts: [FeedPost] {
+        store.posts.filter { !moderation.isHidden(id: $0.id, author: $0.author) }
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if store.posts.isEmpty {
+                if visiblePosts.isEmpty {
                     empty
                 } else {
-                    List(store.posts) { row($0) }
+                    List(visiblePosts) { row($0) }
                         .listStyle(.plain)
                 }
             }
@@ -21,6 +27,23 @@ struct FeedView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .task { await store.load() }
             .refreshable { await store.load() }
+            .confirmationDialog("Report this post?",
+                                isPresented: Binding(get: { reportTarget != nil },
+                                                     set: { if !$0 { reportTarget = nil } }),
+                                titleVisibility: .visible) {
+                Button("Report as objectionable", role: .destructive) {
+                    if let p = reportTarget { moderation.report(contentType: "post", contentId: p.id) }
+                    reportTarget = nil
+                }
+                if let p = reportTarget, let a = p.author, !a.isEmpty {
+                    Button("Block \(a)", role: .destructive) {
+                        moderation.block(author: a); reportTarget = nil
+                    }
+                }
+                Button("Cancel", role: .cancel) { reportTarget = nil }
+            } message: {
+                Text("We review reports and remove violating content within 24 hours.")
+            }
         }
     }
 
@@ -49,6 +72,16 @@ struct FeedView: View {
             }
         }
         .padding(.vertical, 6)
+        .contextMenu {
+            Button(role: .destructive) { reportTarget = p } label: {
+                Label("Report or Block", systemImage: "flag")
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { reportTarget = p } label: {
+                Label("Report", systemImage: "flag")
+            }
+        }
     }
 
     private func conditions(_ p: FeedPost) -> String? {

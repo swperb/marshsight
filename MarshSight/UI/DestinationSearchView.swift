@@ -8,11 +8,13 @@ import CoreLocation
 struct DestinationSearchView: View {
     let center: CLLocationCoordinate2D?
     @ObservedObject var contributions: ContributionStore
+    @ObservedObject var moderation: ModerationStore
     let extraSpots: [MarkerFeature]      // gauges / region markers (navigable)
     var onSelect: (NavDestination) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
+    @State private var reportTarget: Contribution?
     @State private var results: [Result] = []
     @State private var searching = false
     @State private var drivePreview: NavDestination?
@@ -36,6 +38,18 @@ struct DestinationSearchView: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .sheet(item: $drivePreview) { dest in
                 DrivePreviewView(destination: dest, origin: center)
+            }
+            .confirmationDialog("Report this spot?",
+                                isPresented: Binding(get: { reportTarget != nil },
+                                                     set: { if !$0 { reportTarget = nil } }),
+                                titleVisibility: .visible) {
+                Button("Report as inaccurate or objectionable", role: .destructive) {
+                    if let s = reportTarget { moderation.report(contentType: "contribution", contentId: s.id) }
+                    reportTarget = nil
+                }
+                Button("Cancel", role: .cancel) { reportTarget = nil }
+            } message: {
+                Text("Reported spots are reviewed and removed within 24 hours if they break the rules.")
             }
         }
     }
@@ -106,6 +120,11 @@ struct DestinationSearchView: View {
                     driveButton(spot.name, spot.coordinate)
                     voteControl(spot)
                 }
+                .contextMenu {
+                    Button(role: .destructive) { reportTarget = spot } label: {
+                        Label("Report this spot", systemImage: "flag")
+                    }
+                }
             }
         }
     }
@@ -159,8 +178,9 @@ struct DestinationSearchView: View {
 
     private var communitySpots: [Contribution] {
         let q = query.trimmingCharacters(in: .whitespaces)
-        let matched = q.isEmpty ? contributions.allSpots
-            : contributions.allSpots.filter { $0.name.localizedCaseInsensitiveContains(q) }
+        let base = contributions.allSpots.filter { !moderation.isHidden(id: $0.id, author: nil) }
+        let matched = q.isEmpty ? base
+            : base.filter { $0.name.localizedCaseInsensitiveContains(q) }
         guard let c = center else { return matched }
         return matched.sorted { GeoMath.distance($0.coordinate, c) < GeoMath.distance($1.coordinate, c) }
     }
