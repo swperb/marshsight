@@ -14,6 +14,7 @@ struct TrophyRoomView: View {
     @State private var showRules = false
     @State private var showBlockedNotice = false
     @State private var pendingShare: (entry: LogEntry, includeLocation: Bool)?
+    @State private var shareCard: ShareCardItem?
 
     /// Run all the pre-flight gates before a post reaches the network: word
     /// filter, then the one-time community-guidelines agreement.
@@ -52,6 +53,7 @@ struct TrophyRoomView: View {
             .navigationTitle("Trophy Room")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .sheet(item: $shareCard) { ShareSheet(items: [$0.image]) }
             .sheet(isPresented: $showRules) {
                 CommunityRulesView {
                     acceptedRules = true
@@ -184,11 +186,17 @@ struct TrophyRoomView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .contextMenu {
             Button {
+                let img = UIImage(contentsOfFile: e.photoFile.map { store.photoURL($0).path } ?? "")
+                if let card = renderShareCard(entry: e, photo: img, author: feedName) {
+                    shareCard = ShareCardItem(image: card)
+                }
+            } label: { Label("Share Card (photo)", systemImage: "square.and.arrow.up.on.square") }
+            Button {
                 requestShare(e, includeLocation: false)
-            } label: { Label("Share to Feed", systemImage: "square.and.arrow.up") }
+            } label: { Label("Post to Feed", systemImage: "person.3") }
             Button {
                 requestShare(e, includeLocation: true)
-            } label: { Label("Share with location", systemImage: "mappin.and.ellipse") }
+            } label: { Label("Post with location", systemImage: "mappin.and.ellipse") }
         }
     }
 

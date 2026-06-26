@@ -46,12 +46,12 @@ struct PaywallView: View {
         VStack(spacing: 10) {
             Image(systemName: "scope")
                 .font(.system(size: 50)).foregroundStyle(.cyan)
-            Text("Back the open alternative")
+            Text("Become a Founder")
                 .font(.title2.weight(.bold)).multilineTextAlignment(.center)
-            Text("Everything's unlocked and free during the beta. MarshSight+ is how you keep the map free for everyone and fund the layers below as they roll out.")
+            Text("onX locks the map behind a yearly fee. MarshSight keeps it free and open. The first 100 Founders lock in lifetime access and fund the map the rest of us use free.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
-            Label("Beta: every feature is on right now — no wall", systemImage: "lock.open.fill")
-                .font(.caption.weight(.semibold)).foregroundStyle(.green)
+            Label("Founding Member — first 100 only", systemImage: "flame.fill")
+                .font(.caption.weight(.bold)).foregroundStyle(.orange)
                 .padding(.top, 2)
         }
     }
@@ -72,7 +72,7 @@ struct PaywallView: View {
             if let lifetime = store.products.first(where: { $0.id == PremiumStore.lifetimeID }) {
                 Button { buy(lifetime) } label: {
                     planLabel(title: "Founder — Lifetime", price: lifetime.displayPrice,
-                              sub: "One time, everything forever", highlight: true)
+                              sub: "First 100 only · everything, forever", highlight: true)
                 }.disabled(working)
             }
             if let annual = store.products.first(where: { $0.id == PremiumStore.annualID }) {

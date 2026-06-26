@@ -7,6 +7,7 @@ struct CoachOverlay: View {
     let onDismiss: () -> Void
 
     private let controls: [(String, String, String)] = [
+        ("person.text.rectangle", "See who owns the land", "Tap an owner pin to see who's got it, or tag it for the community"),
         ("magnifyingglass", "Where to?", "Search a marina, ramp, or saved spot, then navigate"),
         ("square.stack.3d.up.fill", "Region (top-left)", "Tap to change or download your area for offline"),
         ("ellipsis", "Menu (top-right)", "Feed, Trophy Room, Logbook, Trail Cameras, Legend, Help"),
@@ -25,9 +26,10 @@ struct CoachOverlay: View {
             VStack(spacing: 0) {
                 VStack(spacing: 6) {
                     Image(systemName: "hand.wave.fill").font(.largeTitle).foregroundStyle(.cyan)
-                    Text("Welcome to your map").font(.title2.weight(.bold))
-                    Text("Here's where everything lives.")
+                    Text("Welcome aboard").font(.title2.weight(.bold))
+                    Text("Public land, water, and property lines — free. Here's the lay of the land.")
                         .font(.subheadline).foregroundStyle(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
                 }
                 .padding(.top, 24).padding(.bottom, 16)
 
