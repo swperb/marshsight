@@ -27,7 +27,7 @@ struct ContentView: View {
     var body: some View {
         Group {
             if !acceptedSafety {
-                SafetyDisclaimerView { acceptedSafety = true }
+                OnboardingView(location: location) { acceptedSafety = true }
             } else if !isAuthorized {
                 permissionPrompt
             } else if regions.active == nil {

@@ -27,6 +27,18 @@ struct MapHomeView: View {
     @State private var recenterTick = 0
     @State private var showFeedback = false
 
+    @AppStorage("layer.land") private var showLand = true
+    @AppStorage("layer.units") private var showUnits = true
+    @AppStorage("layer.parcels") private var showParcels = true
+    @AppStorage("layer.water") private var showWater = true
+    @AppStorage("layer.trails") private var showTrails = true
+    @AppStorage("layer.slope") private var showSlope = false
+
+    private var layerVisibility: LayerVisibility {
+        .init(land: showLand, units: showUnits, parcels: showParcels,
+              water: showWater, trails: showTrails, slope: showSlope)
+    }
+
     var body: some View {
         ZStack {
             RegionMapView(region: regions.active,
@@ -35,6 +47,7 @@ struct MapHomeView: View {
                           interactive: true,
                           basemap: basemap,
                           navPath: engine.remainingPath,
+                          layers: layerVisibility,
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -252,6 +265,7 @@ struct MapHomeView: View {
     private var sideButtons: some View {
         VStack(spacing: 12) {
             basemapMenu
+            layersMenu
             offlineButton
             recordButton
             if recorder.hasTrack && !recorder.isRecording, let gpx = recorder.exportGPX() {
@@ -317,6 +331,23 @@ struct MapHomeView: View {
             }
         } label: {
             Image(systemName: basemap.icon)
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 46, height: 46)
+                .background(.black.opacity(0.55), in: Circle())
+                .foregroundStyle(.white)
+        }
+    }
+
+    private var layersMenu: some View {
+        Menu {
+            Toggle(isOn: $showLand) { Label("Public land", systemImage: "leaf.fill") }
+            Toggle(isOn: $showUnits) { Label("Hunting units", systemImage: "scope") }
+            Toggle(isOn: $showParcels) { Label("Property lines", systemImage: "square.dashed") }
+            Toggle(isOn: $showWater) { Label("Water", systemImage: "drop.fill") }
+            Toggle(isOn: $showTrails) { Label("Trails", systemImage: "figure.walk") }
+            Toggle(isOn: $showSlope) { Label("Slope angle (online)", systemImage: "triangle.fill") }
+        } label: {
+            Image(systemName: "square.3.layers.3d")
                 .font(.system(size: 17, weight: .semibold))
                 .frame(width: 46, height: 46)
                 .background(.black.opacity(0.55), in: Circle())

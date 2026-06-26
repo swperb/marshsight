@@ -93,6 +93,10 @@ enum RegionStyle {
             "version": 8,
             "sources": [
                 "usgs": ["type": "raster", "tiles": [basemap.tileURL], "tileSize": 256, "maxzoom": 16],
+                // USGS 3DEP slope, computed live and colorized (green flat -> red steep).
+                // WMS-style: MapLibre substitutes the tile bbox. Online-only overlay.
+                "slope": ["type": "raster", "tileSize": 256, "tiles": [
+                    "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule=%7B%22rasterFunction%22%3A%22Slope%20Map%22%7D"]],
                 "lands": geojsonSource(landFC),
                 "parcels": geojsonSource(parcelFC),
                 "units": geojsonSource(unitFC),
@@ -107,6 +111,9 @@ enum RegionStyle {
             "layers": [
                 ["id": "bg", "type": "background", "paint": ["background-color": "#0a0f0d"]],
                 ["id": "usgs", "type": "raster", "source": "usgs"],
+                ["id": "slope-raster", "type": "raster", "source": "slope",
+                 "layout": ["visibility": "none"],
+                 "paint": ["raster-opacity": 0.5]],
                 ["id": "lakes-fill", "type": "fill", "source": "lakes",
                  "paint": ["fill-color": "#3B82F6", "fill-opacity": 0.3]],
                 ["id": "lakes-line", "type": "line", "source": "lakes",

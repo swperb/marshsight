@@ -7,6 +7,17 @@ import CoreLocation
 /// on the home screen and as a small inset in AR. Equatable so SwiftUI skips it
 /// on every GPS fix; the basemap style is rebuilt only when the region changes,
 /// while the track and points are updated at runtime without a reload.
+/// Which overlay groups are drawn on the map. Toggled from the home screen's
+/// layers menu so a hunter can declutter a dense area.
+struct LayerVisibility: Equatable {
+    var land = true
+    var units = true
+    var parcels = true
+    var water = true
+    var trails = true
+    var slope = false   // 3DEP slope overlay, online-only, off by default
+}
+
 struct RegionMapView: UIViewRepresentable, Equatable {
 
     let region: LoadedRegion?
@@ -15,6 +26,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     var interactive: Bool = true
     var basemap: Basemap = .hybrid
     var navPath: [CLLocationCoordinate2D] = []
+    var layers: LayerVisibility = .init()
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -27,6 +39,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             && lhs.navPath.count == rhs.navPath.count
             && lhs.navPath.last?.latitude == rhs.navPath.last?.latitude
             && lhs.navPath.last?.longitude == rhs.navPath.last?.longitude
+            && lhs.layers == rhs.layers
             && lhs.recenterTick == rhs.recenterTick
     }
 
@@ -59,6 +72,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.track = track
         coord.contributionMarkers = contributionMarkers
         coord.navPath = navPath
+        coord.layers = layers
 
         if styleToken != coord.lastToken {
             coord.lastToken = styleToken
@@ -66,6 +80,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             uiView.styleURL = RegionStyle.fileURL(region: region, contributions: contributionMarkers, basemap: basemap)
         } else {
             coord.applyDynamicSources()
+            coord.applyLayerVisibility()
         }
 
         if recenterTick != coord.lastRecenter {
@@ -83,10 +98,24 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         var track: [CLLocationCoordinate2D] = []
         var contributionMarkers: [MarkerFeature] = []
         var navPath: [CLLocationCoordinate2D] = []
+        var layers = LayerVisibility()
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             styleLoaded = true
             applyDynamicSources()
+            applyLayerVisibility()
+        }
+
+        /// Show or hide each overlay group by setting style-layer visibility.
+        func applyLayerVisibility() {
+            guard styleLoaded, let style = map?.style else { return }
+            func set(_ id: String, _ visible: Bool) { style.layer(withIdentifier: id)?.isVisible = visible }
+            set("lands-fill", layers.land); set("lands-line", layers.land)
+            set("units-line", layers.units)
+            set("parcels-line", layers.parcels)
+            set("lakes-fill", layers.water); set("lakes-line", layers.water); set("rivers-line", layers.water)
+            set("trails-line", layers.trails)
+            set("slope-raster", layers.slope)
         }
 
         /// Keep the trackline glued to the live user position as it updates.
