@@ -75,22 +75,22 @@ struct ARExperienceView: View {
     private var topControls: some View {
         VStack {
             HStack {
-                circleButton(icon: "xmark", action: onClose)
+                circleButton(icon: "xmark", label: "Close augmented reality", action: onClose)
                 Spacer()
             }
             Spacer()
             HStack {
                 Spacer()
                 VStack(spacing: 12) {
-                    circleButton(icon: "map.fill") { showInset.toggle() }
-                    circleButton(icon: "plus") { showReport = true }
+                    circleButton(icon: "map.fill", label: showInset ? "Hide inset map" : "Show inset map") { showInset.toggle() }
+                    circleButton(icon: "plus", label: "Drop a report here") { showReport = true }
                 }
             }
         }
         .padding(14)
     }
 
-    private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
+    private func circleButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
@@ -98,5 +98,6 @@ struct ARExperienceView: View {
                 .background(.black.opacity(0.55), in: Circle())
                 .foregroundStyle(.white)
         }
+        .accessibilityLabel(label)
     }
 }

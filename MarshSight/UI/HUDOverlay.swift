@@ -48,6 +48,8 @@ struct HUDOverlay: View {
         .foregroundStyle(.cyan)
         .shadow(color: .black.opacity(0.6), radius: 3)
         .padding(left ? .leading : .trailing, 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Destination is to your \(left ? "left" : "right"), turn")
     }
 
     // MARK: - Top bar: speed + GPS quality
@@ -57,18 +59,27 @@ struct HUDOverlay: View {
             pill {
                 Label(speedText, systemImage: "speedometer")
             }
+            .accessibilityLabel("Speed, \(speedText)")
             if let regionName, !regionName.isEmpty {
                 pill {
                     Label(regionName, systemImage: "square.stack.3d.up.fill")
                         .foregroundStyle(.green)
                 }
+                .accessibilityLabel("Region, \(regionName)")
             }
             Spacer()
             pill {
                 Label(gpsText, systemImage: gpsSymbol)
                     .foregroundStyle(gpsColor)
             }
+            .accessibilityLabel(gpsAccessibility)
         }
+    }
+
+    private var gpsAccessibility: String {
+        guard let acc = fix?.horizontalAccuracy, acc >= 0 else { return "G P S, no signal" }
+        let quality = acc <= 8 ? "good" : acc <= 20 ? "fair" : "poor"
+        return "G P S accuracy \(quality), \(Int(acc)) meters"
     }
 
     // MARK: - Current public land
@@ -163,6 +174,9 @@ struct HUDOverlay: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(.red.opacity(0.85), in: Capsule())
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Hazard ahead, \(alert.feature.name), \(Fmt.distance(alert.distance)) away")
+                .accessibilityAddTraits(.isStaticText)
             }
         }
         .padding(.bottom, 10)
@@ -198,6 +212,16 @@ struct HUDOverlay: View {
         }
         .padding(14)
         .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 18))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(steeringSpoken)
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    private var steeringSpoken: String {
+        var s = "Heading to \(guidance.activeWaypoint?.name ?? "destination"). \(turnHint.text)."
+        if let d = guidance.distanceToWaypoint { s += " \(Fmt.distance(d)) away." }
+        if let l = guidance.distanceToLaunch { s += " Launch \(Fmt.distance(l)) away." }
+        return s
     }
 
     /// Turn guidance from how far off the destination is from where you face.
@@ -219,6 +243,7 @@ struct HUDOverlay: View {
                 .rotationEffect(.degrees(relativeBearing))
         }
         .frame(width: 64, height: 64)
+        .accessibilityHidden(true)   // direction is spoken by the steering card
     }
 
     // MARK: - Helpers
