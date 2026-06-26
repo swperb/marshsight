@@ -44,6 +44,8 @@ struct MapHomeView: View {
     @State private var showTrophy = false
     @State private var showConnections = false
     @State private var showFeed = false
+    @State private var showCameras = false
+    @AppStorage("camInboxCode") private var camCode = ""
     @State private var selectedMarker: SelectedMarker?
     @State private var drivePreview: NavDestination?
     @State private var mapCenter: CLLocationCoordinate2D?
@@ -116,6 +118,7 @@ struct MapHomeView: View {
         .sheet(isPresented: $showTrophy) { TrophyRoomView(store: logbook, feed: feed) }
         .sheet(isPresented: $showConnections) { ConnectionsView() }
         .sheet(isPresented: $showFeed) { FeedView(store: feed) }
+        .sheet(isPresented: $showCameras) { CamerasView(code: camCode) }
         .sheet(item: $drivePreview) { dest in
             DrivePreviewView(destination: dest, origin: location.fix?.coordinate)
         }
@@ -536,6 +539,13 @@ struct MapHomeView: View {
                     Label("Take me here", systemImage: "location.north.line.fill")
                         .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
                         .background(.cyan, in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.black)
+                }
+            }
+            if m.kind == "camera" {
+                Button { selectedMarker = nil; showCameras = true } label: {
+                    Label("View camera photos", systemImage: "photo.on.rectangle.angled")
+                        .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
+                        .background(.blue.opacity(0.25), in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.white)
                 }
             }
         }
