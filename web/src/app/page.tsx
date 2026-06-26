@@ -12,7 +12,6 @@ import {
   IconLock,
 } from "@/components/Icons";
 
-const TESTFLIGHT_URL = "https://testflight.apple.com/join/rwCZwKBC";
 const GITHUB_URL = "https://github.com/swperb/marshsight";
 
 // The real AR-over-camera screenshot is shot on-device later. Drop it at
@@ -59,10 +58,11 @@ const sources = ["USGS 3DEP", "USGS NHD", "USGS Water Data", "PAD-US", "NOAA ENC
 
 function PrimaryCTA({ className = "", children }: { className?: string; children: React.ReactNode }) {
   return (
-    <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer"
-      className={`inline-flex items-center justify-center rounded-full bg-pine-700 px-7 py-3.5 text-base font-medium text-paper-50 transition hover:bg-pine-800 ${className}`}>
+    <span
+      className={`inline-flex items-center justify-center gap-2.5 rounded-full border border-pine-700/40 bg-pine-700/10 px-7 py-3.5 text-base font-medium text-pine-700 ${className}`}>
+      <span className="h-2 w-2 rounded-full bg-clay-600" aria-hidden />
       {children}
-    </a>
+    </span>
   );
 }
 
@@ -83,10 +83,10 @@ export default function Home() {
             <a href="#pricing" className="transition hover:text-pine-700">Pricing</a>
             <a href={GITHUB_URL} className="transition hover:text-pine-700">GitHub</a>
           </nav>
-          <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer"
-            className="rounded-full border border-pine-700 px-4 py-2 text-sm font-medium text-pine-700 transition hover:bg-pine-700 hover:text-paper-50">
-            Join the beta
-          </a>
+          <span className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-clay-600" aria-hidden />
+            Coming soon
+          </span>
         </div>
       </header>
 
@@ -95,7 +95,7 @@ export default function Home() {
         <section className="relative">
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 sm:py-24 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
-              <p className="eyebrow text-clay-600">Free · Open source · iOS beta</p>
+              <p className="eyebrow text-clay-600">Free · Open source · Coming soon to iOS</p>
               <h1 className="mt-5 font-serif text-5xl font-medium leading-[1.05] tracking-tight text-ink-900 sm:text-6xl">
                 A field map that knows the land and the water.
               </h1>
@@ -105,7 +105,7 @@ export default function Home() {
                 augmented reality. Built entirely on open government data.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <PrimaryCTA className="w-full sm:w-auto">Get the beta on TestFlight</PrimaryCTA>
+                <PrimaryCTA className="w-full sm:w-auto">Coming soon to the App Store</PrimaryCTA>
                 <a href="#app" className="inline-flex w-full items-center justify-center rounded-full border border-line px-7 py-3.5 text-base font-medium text-ink-800 transition hover:border-ink-400 sm:w-auto">
                   See the app
                 </a>
@@ -339,17 +339,17 @@ export default function Home() {
               Get out before the others wake up.
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-lg text-paper-100/85">
-              MarshSight is live in open beta on iOS through TestFlight. Install
-              TestFlight, then tap below to put it on your iPhone.
+              MarshSight is coming soon to the App Store for iPhone. Star the
+              project on GitHub to follow along until launch.
             </p>
             <div className="mt-9 flex justify-center">
-              <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full bg-paper-50 px-7 py-3.5 text-base font-medium text-pine-800 transition hover:bg-white">
-                Get the beta on TestFlight
-              </a>
+              <span className="inline-flex items-center justify-center gap-2.5 rounded-full bg-paper-50/95 px-7 py-3.5 text-base font-medium text-pine-800">
+                <span className="h-2 w-2 rounded-full bg-clay-600" aria-hidden />
+                Coming soon to the App Store
+              </span>
             </div>
             <p className="mt-4 text-sm text-paper-100/70">
-              Requires an iPhone and the free TestFlight app from Apple.
+              Free on iPhone. Optional MarshSight+ for power features.
             </p>
           </div>
         </section>
@@ -373,7 +373,6 @@ export default function Home() {
             <a href={`${GITHUB_URL}/issues`} className="transition hover:text-pine-700">Report an issue</a>
             <a href="/privacy" className="transition hover:text-pine-700">Privacy</a>
             <a href="/terms" className="transition hover:text-pine-700">Terms</a>
-            <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="transition hover:text-pine-700">TestFlight beta</a>
           </nav>
         </div>
         <div className="border-t border-line">
