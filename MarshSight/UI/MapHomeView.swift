@@ -24,6 +24,7 @@ struct MapHomeView: View {
 
     var onEnterAR: () -> Void
     var onReport: () -> Void
+    var onTagOwner: () -> Void
     var onSwitchRegion: () -> Void
     var onSearch: () -> Void
     var onNavigateTo: (NavDestination) -> Void
@@ -281,6 +282,14 @@ struct MapHomeView: View {
                 contextRow(color: .orange, icon: "house.lodge.fill",
                            title: "Private Land",
                            sub: parcelOwnerText(parcel))
+                if parcel.owner?.isEmpty != false {
+                    Button(action: onTagOwner) {
+                        Label(contributions.communityOwner(in: parcel) == nil ? "Tag the owner" : "Add owner tag",
+                              systemImage: "person.text.rectangle.fill")
+                            .font(.caption.weight(.bold)).foregroundStyle(.pink)
+                    }
+                    .padding(.leading, 2)
+                }
             }
             if let unit = currentUnit {
                 contextRow(color: .purple, icon: "scope",

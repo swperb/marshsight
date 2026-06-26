@@ -15,6 +15,7 @@ struct ContentView: View {
     @StateObject private var premium = PremiumStore()
 
     @State private var showReport = false
+    @State private var reportKind: Contribution.Kind = .hazard
     @State private var showRegionPicker = false
     @State private var showDestinationSearch = false
     @State private var showAR = false
@@ -94,7 +95,8 @@ struct ContentView: View {
                     logbook: logbook,
                     premium: premium,
                     onEnterAR: { showAR = true },
-                    onReport: { showReport = true },
+                    onReport: { reportKind = .hazard; showReport = true },
+                    onTagOwner: { reportKind = .owner; showReport = true },
                     onSwitchRegion: { showRegionPicker = true },
                     onSearch: { showDestinationSearch = true },
                     onNavigateTo: startNavigation,
@@ -105,7 +107,7 @@ struct ContentView: View {
                     canReturn: canReturn,
                     canRetrace: canRetrace)
             .sheet(isPresented: $showReport) {
-                ReportSheet(coordinate: location.fix?.coordinate) { kind, name, note, visibility in
+                ReportSheet(coordinate: location.fix?.coordinate, initialKind: reportKind) { kind, name, note, visibility in
                     if let c = location.fix?.coordinate {
                         contributions.add(kind: kind, name: name, note: note, at: c, visibility: visibility)
                     }

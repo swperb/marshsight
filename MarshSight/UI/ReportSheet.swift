@@ -5,6 +5,7 @@ import CoreLocation
 /// current location. Private by default to protect honey holes.
 struct ReportSheet: View {
     let coordinate: CLLocationCoordinate2D?
+    var initialKind: Contribution.Kind = .hazard
     let onSave: (Contribution.Kind, String, String?, Contribution.Visibility) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -39,8 +40,9 @@ struct ReportSheet: View {
                     Text("Waiting for a GPS fix...").foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Drop a Report")
+            .navigationTitle(initialKind == .owner ? "Tag the Owner" : "Drop a Report")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear { kind = initialKind }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
