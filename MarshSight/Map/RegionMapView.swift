@@ -40,6 +40,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
     var windFromDegrees: Double? = nil
     var windSpeedMph: Double? = nil
     var onSelectMarker: ((SelectedMarker?) -> Void)? = nil
+    var onRegionChange: ((CLLocationCoordinate2D) -> Void)? = nil
     /// Bump to recenter the map on the user (the home screen's locate button).
     var recenterTick: Int = 0
 
@@ -96,6 +97,7 @@ struct RegionMapView: UIViewRepresentable, Equatable {
         coord.contributionMarkers = contributionMarkers
         coord.navPath = navPath
         coord.layers = layers
+        coord.onRegionChange = onRegionChange
         coord.windFromDegrees = windFromDegrees
         coord.windSpeedMph = windSpeedMph
         coord.onSelectMarker = onSelectMarker
@@ -144,6 +146,18 @@ struct RegionMapView: UIViewRepresentable, Equatable {
             let lon = (a["lon"] as? Double) ?? f.coordinate.longitude
             onSelectMarker?(SelectedMarker(title: title, kind: kind,
                                            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon)))
+        }
+
+        var onRegionChange: ((CLLocationCoordinate2D) -> Void)?
+        private var lastRegionCenter: CLLocationCoordinate2D?
+
+        /// Report the map center after a pan/zoom settles, so the app can scout-
+        /// load data for an area away from the user. Debounced to ~3 km.
+        func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) {
+            let c = mapView.centerCoordinate
+            if let last = lastRegionCenter, GeoMath.distance(last, c) < 3000 { return }
+            lastRegionCenter = c
+            onRegionChange?(c)
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {

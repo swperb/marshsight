@@ -93,13 +93,15 @@ final class RegionStore: ObservableObject {
 
     private var lastAutoCenter: CLLocationCoordinate2D?
     private var autoLoading = false
+    /// True when the map tracks the user; false while scouting a panned-to area.
+    @Published var followsUser = true
 
     /// Live, nationwide coverage: fetch the layers around wherever the user is,
     /// refreshing as they move, so the map works anywhere without downloading a
     /// region first. Offline, the fetches return nothing and we keep the current
     /// region untouched. Deliberate offline downloads are respected.
-    func autoLoadIfNeeded(around center: CLLocationCoordinate2D) async {
-        guard !autoLoading, !isWorking else { return }
+    func autoLoadIfNeeded(around center: CLLocationCoordinate2D, fromUser: Bool = true) async {
+        if fromUser && !followsUser { return }   // scouting: don't snap back to GPS
         let refresh: Bool
         if let a = active, a.isLive {
             refresh = GeoMath.distance(a.center, center) > 20_000
@@ -111,7 +113,23 @@ final class RegionStore: ObservableObject {
             refresh = lastAutoCenter == nil || GeoMath.distance(lastAutoCenter!, center) > 20_000
         }
         guard refresh else { return }
+        await loadLive(around: center)
+    }
 
+    /// Scout a different area: load its data even though it's away from the user.
+    func scout(to center: CLLocationCoordinate2D) async {
+        followsUser = false
+        await loadLive(around: center)
+    }
+
+    /// Resume following the user; the next fix reloads the area around them.
+    func recenterToUser() {
+        followsUser = true
+        lastAutoCenter = nil
+    }
+
+    private func loadLive(around center: CLLocationCoordinate2D) async {
+        guard !autoLoading, !isWorking else { return }
         autoLoading = true
         defer { autoLoading = false }
         if active == nil { status = "Loading the area around you..." }

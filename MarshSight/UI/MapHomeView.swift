@@ -39,6 +39,13 @@ struct MapHomeView: View {
     @State private var showLegend = false
     @State private var selectedMarker: SelectedMarker?
     @State private var drivePreview: NavDestination?
+    @State private var mapCenter: CLLocationCoordinate2D?
+
+    /// True once the map has been panned well away from the loaded data.
+    private var pannedAway: Bool {
+        guard let c = mapCenter, let a = regions.active else { return false }
+        return GeoMath.distance(c, a.center) > 22_000
+    }
 
     private var tideNote: String? {
         tides.next.map { "\($0.isHigh ? "High" : "Low") \(Self.tideTimeFmt.string(from: $0.time))" }
@@ -71,6 +78,7 @@ struct MapHomeView: View {
                           windFromDegrees: weather?.windFromDegrees,
                           windSpeedMph: weather?.windSpeedMph,
                           onSelectMarker: { selectedMarker = $0 },
+                          onRegionChange: { mapCenter = $0 },
                           recenterTick: recenterTick)
                 .equatable()
                 .ignoresSafeArea()
@@ -80,6 +88,7 @@ struct MapHomeView: View {
                 if weather != nil { weatherStrip }
                 if let t = tides.next { tideStrip(t) }
                 searchBar
+                if pannedAway && !regions.isWorking { scoutButton }
                 Spacer()
                 if let m = selectedMarker { markerCard(m) }
                 else if engine.isNavigating { navBanner } else { contextCard }
@@ -131,6 +140,19 @@ struct MapHomeView: View {
     }
 
     // MARK: - Search + navigation
+
+    private var scoutButton: some View {
+        Button {
+            if let c = mapCenter { Task { await regions.scout(to: c) } }
+        } label: {
+            Label("Load this area", systemImage: "arrow.down.circle.dotted")
+                .font(.subheadline.weight(.semibold)).foregroundStyle(.black)
+                .padding(.horizontal, 16).padding(.vertical, 9)
+                .background(.cyan, in: Capsule())
+                .shadow(color: .black.opacity(0.3), radius: 4)
+        }
+        .padding(.top, 8)
+    }
 
     private var searchBar: some View {
         Button(action: onSearch) {
@@ -316,7 +338,11 @@ struct MapHomeView: View {
                 }
             }
             circleButton(icon: "plus", action: onReport)
-            circleButton(icon: "location.fill.viewfinder") { recenterTick += 1 }
+            circleButton(icon: "location.fill.viewfinder") {
+                regions.recenterToUser()
+                recenterTick += 1
+                if let c = location.fix?.coordinate { Task { await regions.autoLoadIfNeeded(around: c) } }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         .padding(.trailing, 14)
