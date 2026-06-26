@@ -195,7 +195,43 @@ enum HuntingUnitsService {
         // OH: ODNR Division of Wildlife lands, filtered to wildlife areas.
         "OH": Source(
             url: "https://gis.ohiodnr.gov/arcgis/rest/services/DOW_Services/HuntingRegulations_AGOL_3/MapServer/18/query",
-            nameField: "LANDS_NAME", kind: "Wildlife Area", whereClause: "PROP_TYPE='WA'")
+            nameField: "LANDS_NAME", kind: "Wildlife Area", whereClause: "PROP_TYPE='WA'"),
+        // ME: Maine Dept of Inland Fisheries & Wildlife WMAs.
+        "ME": Source(
+            url: "https://services1.arcgis.com/RbMX0mRVOFNTdLzd/arcgis/rest/services/MaineDIFW_WildlifeManagementAreas/FeatureServer/0/query",
+            nameField: "PARCEL_NAME", kind: "WMA"),
+        // NH: NH Fish & Game lands via UNH GRANIT, filtered to F&G ownership.
+        "NH": Source(
+            url: "https://nhgeodata.unh.edu/hosting/rest/services/Hosted/EC_Conservation/FeatureServer/6/query",
+            nameField: "name", kind: "WMA", whereClause: "ppagency=32000"),
+        // VT: Vermont Fish & Wildlife WMAs.
+        "VT": Source(
+            url: "https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_ANRATLASFISHWILDLIFE_WM_NOCACHE/MapServer/20/query",
+            nameField: "NAME", kind: "WMA"),
+        // MA: MassWildlife lands, filtered to Wildlife Management Areas.
+        "MA": Source(
+            url: "https://services1.arcgis.com/7iJyYTjCtKsZS1LR/arcgis/rest/services/MassWildlifeLands/FeatureServer/0/query",
+            nameField: "SITE_NAME", kind: "WMA", whereClause: "F_TYPE='WMA'"),
+        // CT: CT DEEP property, filtered to wildlife areas.
+        "CT": Source(
+            url: "https://services1.arcgis.com/FjPcSmEFuDYlIdKC/arcgis/rest/services/Connecticut_DEEP_Property/FeatureServer/0/query",
+            nameField: "PROPERTY", kind: "Wildlife Area", whereClause: "AV_LEGEND='Wildlife Area'"),
+        // RI: RI DEM conservation lands, filtered to management areas.
+        "RI": Source(
+            url: "https://services2.arcgis.com/S8zZg9pg23JUEexQ/arcgis/rest/services/ENV_Conservation_Lands_State_spf/FeatureServer/0/query",
+            nameField: "NAME", kind: "Management Area", whereClause: "PrimUse='Management Area'"),
+        // NJ: NJ DEP Fish & Wildlife WMA boundaries.
+        "NJ": Source(
+            url: "https://services1.arcgis.com/QWdNfRs7lkPq4g4Q/arcgis/rest/services/Wildlife_Management_Area_WMA_Restrictions_in_New_Jersey/FeatureServer/41/query",
+            nameField: "WMA", kind: "WMA"),
+        // AK: Alaska Dept of Fish & Game game management subunits.
+        "AK": Source(
+            url: "https://services.arcgis.com/VdkVOAHovLuozJG4/arcgis/rest/services/Subunits_shp/FeatureServer/0/query",
+            nameField: "SubLabel", kind: "Game Management Subunit"),
+        // HI: Hawaii DLNR DOFAW mammal hunting units, excluding blank names.
+        "HI": Source(
+            url: "https://services.arcgis.com/HQ0xoN0EzDPBOEci/arcgis/rest/services/HuntingSection2019_mammal/FeatureServer/0/query",
+            nameField: "Unit_Name", kind: "Hunting Unit", whereClause: "Unit_Name IS NOT NULL AND Unit_Name<>' '")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
