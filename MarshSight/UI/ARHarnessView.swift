@@ -12,6 +12,17 @@ import CoreLocation
 struct ARHarnessView: View {
     @State private var bg = 0
     @State private var scenario = 0
+    @State private var heading: Double = 20      // facing direction, pannable
+
+    // Mock markers around a fixed origin, placed by true bearing + distance.
+    private let markerOrigin = CLLocationCoordinate2D(latitude: 32.84, longitude: -86.71)
+    private var mockMarkers: [(name: String, hazard: Bool, coord: CLLocationCoordinate2D)] {
+        [("North Stand", false, GeoMath.destination(from: markerOrigin, bearingDegrees: 20, meters: 300)),
+         ("Submerged stump", true, GeoMath.destination(from: markerOrigin, bearingDegrees: 62, meters: 70)),
+         ("Boat Launch", false, GeoMath.destination(from: markerOrigin, bearingDegrees: 205, meters: 600)),
+         ("Feeder", false, GeoMath.destination(from: markerOrigin, bearingDegrees: 332, meters: 180))]
+    }
+    private let fov: Double = 64                  // horizontal field of view, degrees
 
     // Stand-in "camera" backgrounds, worst-cases first (bright sky blows out
     // white text; dark timber hides shadows).
@@ -26,9 +37,11 @@ struct ARHarnessView: View {
             LinearGradient(colors: backgrounds[bg].1, startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
+            markerLayer
+
             HUDOverlay(guidance: guidance,
                        fix: fix,
-                       heading: 8,
+                       heading: heading,
                        nearestGauge: nil,
                        currentLand: nil,
                        currentParcel: nil,
@@ -38,13 +51,46 @@ struct ARHarnessView: View {
         // Harness controls pinned bottom-center, clear of the HUD's steering card
         .overlay(alignment: .bottom) {
             HStack(spacing: 10) {
-                Button("BG: \(backgrounds[bg].0)") { bg = (bg + 1) % backgrounds.count }
-                Button("Scenario \(scenario + 1)") { scenario = (scenario + 1) % 2 }
+                Button("BG") { bg = (bg + 1) % backgrounds.count }
+                Button("Scenario") { scenario = (scenario + 1) % 2 }
+                Button("Pan -") { heading = (heading - 20).truncatingRemainder(dividingBy: 360) }
+                Text("hdg \(Int((heading + 360).truncatingRemainder(dividingBy: 360)))°")
+                Button("Pan +") { heading = (heading + 20).truncatingRemainder(dividingBy: 360) }
             }
             .font(.caption2.weight(.bold)).tint(.white)
             .padding(6).background(.purple.opacity(0.7), in: Capsule())
             .padding(.bottom, 2)
         }
+    }
+
+    /// Projects the mock markers onto the "windshield" using true bearing vs.
+    /// heading (horizontal) and distance (size). Markers outside the field of
+    /// view are dropped - the HUD's edge chevron handles off-screen direction.
+    /// Reuses the unit-tested GeoMath, so this mirrors real AR placement.
+    private var markerLayer: some View {
+        GeometryReader { geo in
+            ForEach(mockMarkers, id: \.name) { m in
+                let bearing = GeoMath.bearing(from: markerOrigin, to: m.coord)
+                let rel = NavigationEngine.relativeBearing(heading: heading, target: bearing)
+                if abs(rel) <= fov / 2 {
+                    let dist = GeoMath.distance(markerOrigin, m.coord)
+                    let x = geo.size.width / 2 + CGFloat(rel / (fov / 2)) * (geo.size.width / 2 - 40)
+                    let size = max(16.0, 60.0 - dist / 12)   // closer = bigger
+                    VStack(spacing: 3) {
+                        Image(systemName: m.hazard ? "exclamationmark.triangle.fill" : "mappin.circle.fill")
+                            .font(.system(size: size))
+                            .foregroundStyle(m.hazard ? .red : .cyan)
+                            .shadow(color: .black.opacity(0.6), radius: 2)
+                        Text("\(m.name)  ·  \(Fmt.distance(dist))")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(.black.opacity(0.5), in: Capsule())
+                    }
+                    .position(x: x, y: geo.size.height * 0.42)
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     private var fix: NavFix {
