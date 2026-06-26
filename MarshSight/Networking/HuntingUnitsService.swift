@@ -26,7 +26,17 @@ enum HuntingUnitsService {
         let url: String        // ArcGIS layer .../query endpoint, returns GeoJSON
         let nameField: String  // attribute holding the unit name
         let kind: String       // short label, e.g. "Deer Zone"
+        var whereClause: String = "1=1"  // server-side filter
     }
+
+    /// National overlays that apply in every state, fetched by location rather
+    /// than by state code. FWS publishes hunt-unit boundaries for the whole
+    /// National Wildlife Refuge System; we keep only the huntable units.
+    static let nationalSources: [Source] = [
+        Source(
+            url: "https://services.arcgis.com/QVENGdaPbd4LUkLV/arcgis/rest/services/FWS_NWRS_HQ_PublicHuntUnits_view/FeatureServer/0/query",
+            nameField: "Organization_Name", kind: "Refuge Hunt Unit", whereClause: "Huntable='Yes'")
+    ]
 
     /// Verified state sources, all free/public, no key.
     /// AR: Arkansas Game & Fish Commission deer zones (services.arcgis.com/5bMc8SlGDYGINZr5).
@@ -93,17 +103,79 @@ enum HuntingUnitsService {
         // KY: KDFWR public hunting areas.
         "KY": Source(
             url: "https://services3.arcgis.com/ghsX9CKghMvyYjBU/arcgis/rest/services/Ky_KDFWR_PublicHuntingAreas_WM_gdb/FeatureServer/0/query",
-            nameField: "AREANAME", kind: "Public Hunting Area")
+            nameField: "AREANAME", kind: "Public Hunting Area"),
+        // NY: NYS DEC Wildlife Management Areas (layer 17).
+        "NY": Source(
+            url: "https://services6.arcgis.com/DZHaqZm9cxOD4CWM/arcgis/rest/services/Wildlife_Management_Areas/FeatureServer/17/query",
+            nameField: "WMA", kind: "WMA"),
+        // CO: Colorado Parks & Wildlife game management units (numbered).
+        "CO": Source(
+            url: "https://services5.arcgis.com/enGOFVOIYC8OyheQ/arcgis/rest/services/Game_Management_Units_(GMUs)_CPW/FeatureServer/0/query",
+            nameField: "GMUID", kind: "Game Management Unit"),
+        // MT: Montana FWP deer/elk/lion hunting districts (numbered).
+        "MT": Source(
+            url: "https://services3.arcgis.com/Cdxz8r11hT0MGzg1/arcgis/rest/services/ADMBND_HD_DEERELKLION/FeatureServer/0/query",
+            nameField: "NAME", kind: "Hunting District"),
+        // WY: Wyoming Game & Fish elk hunt areas (numbered).
+        "WY": Source(
+            url: "https://services6.arcgis.com/cWzdqIyxbijuhPLw/arcgis/rest/services/ElkHuntAreas/FeatureServer/0/query",
+            nameField: "HUNTAREA", kind: "Elk Hunt Area"),
+        // ID: Idaho Fish & Game game management units.
+        "ID": Source(
+            url: "https://services.arcgis.com/FjJI5xHF2dUPVrgK/arcgis/rest/services/GameManagementUnits/FeatureServer/0/query",
+            nameField: "NAME", kind: "Game Management Unit"),
+        // UT: Utah DWR big game hunt boundaries.
+        "UT": Source(
+            url: "https://services.arcgis.com/ZzrwjTRez6FJiOq4/arcgis/rest/services/Utah_Big_Game_Hunt_Boundaries_2025/FeatureServer/0/query",
+            nameField: "Boundary_Name", kind: "Hunt Boundary"),
+        // NV: Nevada Dept of Wildlife game management units.
+        "NV": Source(
+            url: "https://services.arcgis.com/RyxlXSfFi87rAosq/arcgis/rest/services/NDOWGameMgmtUnits/FeatureServer/0/query",
+            nameField: "HUNTUNIT", kind: "Game Management Unit"),
+        // AZ: Arizona Game & Fish hunt units.
+        "AZ": Source(
+            url: "https://services8.arcgis.com/KyZIQDOsXnGaTxj2/arcgis/rest/services/AZ_Game_and_Fish_Hunt_Units/FeatureServer/0/query",
+            nameField: "GMU", kind: "Game Management Unit"),
+        // NM: New Mexico Dept of Game & Fish game management units.
+        "NM": Source(
+            url: "https://services2.arcgis.com/CjbW1bVhK4dB3WOa/arcgis/rest/services/NMDGF_Game_Management_Units_I_E__v2_WFL1/FeatureServer/0/query",
+            nameField: "GMU", kind: "Game Management Unit"),
+        // WA: WDFW game management units (self-hosted).
+        "WA": Source(
+            url: "https://geodataservices.wdfw.wa.gov/arcgis/rest/services/MapServices/SharedReferenceLayers/MapServer/0/query",
+            nameField: "GMU_Name", kind: "Game Management Unit"),
+        // OR: Oregon Dept of Fish & Wildlife wildlife management units (self-hosted).
+        "OR": Source(
+            url: "https://nrimp.dfw.state.or.us/arcgis/rest/services/ODFW_Admin/WildlifeManagementUnits/FeatureServer/0/query",
+            nameField: "UNIT_NAME", kind: "Wildlife Management Unit"),
+        // CA: CDFW deer hunt zones.
+        "CA": Source(
+            url: "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds342_fpu/FeatureServer/0/query",
+            nameField: "Zone_Nam", kind: "Deer Hunt Zone")
     ]
 
     static func hasCoverage(stateCode: String) -> Bool { registry[stateCode.uppercased()] != nil }
 
+    /// State hunting units for the region's state, plus any national overlays
+    /// (e.g. federal refuge hunt units) that apply everywhere.
     static func units(stateCode: String,
                       center: CLLocationCoordinate2D,
                       radiusKm: Double = 40,
                       maxUnits: Int = 50) async throws -> [HuntingUnit] {
-        guard let src = registry[stateCode.uppercased()] else { return [] }
+        var out: [HuntingUnit] = []
+        if let src = registry[stateCode.uppercased()] {
+            out += (try? await fetch(src: src, center: center, radiusKm: radiusKm, maxUnits: maxUnits)) ?? []
+        }
+        for src in nationalSources {
+            out += (try? await fetch(src: src, center: center, radiusKm: radiusKm, maxUnits: maxUnits)) ?? []
+        }
+        return out
+    }
 
+    private static func fetch(src: Source,
+                              center: CLLocationCoordinate2D,
+                              radiusKm: Double,
+                              maxUnits: Int) async throws -> [HuntingUnit] {
         let m = GeoMath.metersPerDegree(atLatitude: center.latitude)
         let dLat = (radiusKm * 1000) / m.latM
         let dLon = (radiusKm * 1000) / m.lonM
@@ -113,7 +185,7 @@ enum HuntingUnitsService {
 
         var comps = URLComponents(string: src.url)!
         comps.queryItems = [
-            .init(name: "where", value: "1=1"),
+            .init(name: "where", value: src.whereClause),
             .init(name: "geometry", value: envelope),
             .init(name: "geometryType", value: "esriGeometryEnvelope"),
             .init(name: "inSR", value: "4326"),
@@ -130,13 +202,13 @@ enum HuntingUnitsService {
             throw ServiceError.badResponse
         }
 
-        // Dynamic name field per state, so parse loosely rather than via Codable.
+        // Dynamic name field per source, so parse loosely rather than via Codable.
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let features = root["features"] as? [[String: Any]] else { return [] }
 
         return features.compactMap { feature in
             let props = feature["properties"] as? [String: Any] ?? [:]
-            let name = (props[src.nameField] as? String) ?? src.kind
+            let name = displayName(props[src.nameField], kind: src.kind)
             let id = (props["OBJECTID"] as? Int) ?? name.hashValue
             guard let geom = feature["geometry"] as? [String: Any],
                   let type = geom["type"] as? String else { return nil }
@@ -144,6 +216,20 @@ enum HuntingUnitsService {
             guard !rings.isEmpty else { return nil }
             return HuntingUnit(id: id, name: name, rings: rings)
         }
+    }
+
+    /// Build a human label from a name attribute that may be a string, an
+    /// integer (e.g. a unit number like 15), or missing. Bare numbers and short
+    /// codes get the kind prefixed so "15" reads as "Game Management Unit 15".
+    private static func displayName(_ raw: Any?, kind: String) -> String {
+        let value: String
+        if let s = raw as? String { value = s.trimmingCharacters(in: .whitespaces) }
+        else if let i = raw as? Int { value = String(i) }
+        else if let d = raw as? Double { value = String(Int(d)) }
+        else { value = "" }
+        if value.isEmpty { return kind }
+        let bare = value.allSatisfy { $0.isNumber || $0 == "-" } || value.count <= 3
+        return bare ? "\(kind) \(value)" : value
     }
 
     private static func ringsFrom(type: String, coords: Any?) -> [[CLLocationCoordinate2D]] {

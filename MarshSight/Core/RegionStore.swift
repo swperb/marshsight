@@ -110,12 +110,12 @@ final class RegionStore: ObservableObject {
             parcels = (try? await StateParcelService.parcels(stateCode: stateCode, center: center)) ?? []
         }
 
-        var huntingUnits: [HuntingUnit] = []
-        if let stateCode, HuntingUnitsService.hasCoverage(stateCode: stateCode) {
-            status = "Downloading hunting units..."
-            huntingUnits = (try? await HuntingUnitsService.units(stateCode: stateCode, center: center,
+        // Fetch hunting units for any state: the service returns the state's
+        // units (when covered) plus national federal-refuge hunt units, which
+        // apply everywhere, so we call it regardless of state coverage.
+        status = "Downloading hunting units..."
+        let huntingUnits = (try? await HuntingUnitsService.units(stateCode: stateCode ?? "", center: center,
                                                                  radiusKm: max(radiusKm, 40))) ?? []
-        }
 
         status = "Optimizing map..."
         let refLat = center.latitude
