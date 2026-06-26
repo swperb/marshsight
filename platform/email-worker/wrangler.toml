@@ -1,0 +1,9 @@
+name = "marshsight-camera-inbox"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Non-secret vars. Set the secrets with `wrangler secret put` (see README).
+[vars]
+API_BASE = "https://api.marshsight.com"
+BUCKET = "camera_inbox"
