@@ -80,6 +80,7 @@ export default function Home() {
             <a href="#app" className="transition hover:text-pine-700">The app</a>
             <a href="#features" className="transition hover:text-pine-700">Features</a>
             <a href="#field" className="transition hover:text-pine-700">In the field</a>
+            <a href="#pricing" className="transition hover:text-pine-700">Pricing</a>
             <a href={GITHUB_URL} className="transition hover:text-pine-700">GitHub</a>
           </nav>
           <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer"
@@ -239,7 +240,7 @@ export default function Home() {
               </div>
               <dl className="divide-y divide-line border-y border-line">
                 {[
-                  ["Price", "Free, forever — no subscription, no paywalled layers."],
+                  ["Price", "Core is free, forever — maps, nav, AR, public land, water. MarshSight+ adds power features for those who want them."],
                   ["Source & data", "Open source, with every layer pulled from USGS, NOAA, PAD-US, and USFS."],
                   ["Primary view", "AR-first — boundaries and water rendered onto the real world, not just a flat map."],
                 ].map(([k, v]) => (
@@ -255,6 +256,77 @@ export default function Home() {
               community project and is not affiliated with, endorsed by, or derived
               from onX. It uses no onX data, tiles, or endpoints.
             </p>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+          <div className="max-w-2xl">
+            <p className="eyebrow text-clay-600">Pricing</p>
+            <h2 className="mt-3 font-serif text-4xl font-medium tracking-tight text-ink-900 sm:text-5xl">
+              Free where it counts. Paid where it pays for itself.
+            </h2>
+            <p className="mt-5 text-lg text-ink-600">
+              The map and everything you need to get out and back stays free for
+              good. MarshSight+ unlocks the features that cost real money to run,
+              and keeps the open core free for everyone.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-line bg-paper-50 p-8">
+              <h3 className="font-serif text-2xl font-medium text-ink-900">Free</h3>
+              <p className="mt-1 text-3xl font-semibold text-ink-900">$0</p>
+              <p className="mt-2 text-sm text-ink-500">No account required.</p>
+              <ul className="mt-6 space-y-3 text-sm text-ink-700">
+                {[
+                  "Satellite, topo & terrain maps",
+                  "Public land, hunting units & boundaries",
+                  "Full water network & river gauges",
+                  "AR boundary & spot overlay",
+                  "Weather, tides & moon",
+                  "Logbook, trophy room & community feed",
+                  "Save & share spots, tag property owners",
+                ].map((f) => (
+                  <li key={f} className="flex gap-2.5">
+                    <span aria-hidden className="text-pine-700">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border-2 border-pine-700 bg-white p-8 shadow-sm">
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-serif text-2xl font-medium text-ink-900">MarshSight+</h3>
+                <span className="rounded-full bg-pine-700/10 px-3 py-1 text-xs font-medium text-pine-700">
+                  Supports the project
+                </span>
+              </div>
+              <p className="mt-1 text-3xl font-semibold text-ink-900">
+                $24.99<span className="text-base font-normal text-ink-500">/yr</span>
+              </p>
+              <p className="mt-2 text-sm text-ink-500">
+                or $99 once for a Founder lifetime license.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-ink-700">
+                {[
+                  "Everything in Free",
+                  "Trail-camera sync — email cams straight onto your map",
+                  "AI movement & bite forecasts",
+                  "Scent cone & wind overlay",
+                  "Unlimited offline regions & cloud sync",
+                  "Founder badge and a say in what ships next",
+                ].map((f) => (
+                  <li key={f} className="flex gap-2.5">
+                    <span aria-hidden className="text-pine-700">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-xs leading-relaxed text-ink-400">
+                Free during the open beta — every feature is unlocked while we
+                build. MarshSight+ goes live in the App Store version.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -293,13 +365,14 @@ export default function Home() {
             </span>
             <p className="mt-3 text-sm leading-relaxed text-ink-500">
               Free, open-source AR navigation for hunters and anglers. Built on public
-              data from USGS, NOAA, PAD-US, and USFS. Not affiliated with onX.
+              data from USGS, NOAA, PAD-US, and USFS.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-8 gap-y-2 text-sm text-ink-600">
             <a href={GITHUB_URL} className="transition hover:text-pine-700">GitHub</a>
             <a href={`${GITHUB_URL}/issues`} className="transition hover:text-pine-700">Report an issue</a>
             <a href="/privacy" className="transition hover:text-pine-700">Privacy</a>
+            <a href="/terms" className="transition hover:text-pine-700">Terms</a>
             <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="transition hover:text-pine-700">TestFlight beta</a>
           </nav>
         </div>
