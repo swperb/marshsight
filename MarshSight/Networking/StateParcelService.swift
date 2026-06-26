@@ -32,7 +32,26 @@ enum StateParcelService {
         "VT": "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_VTPARCELS_poly_standardized_parcels_SP_v1/FeatureServer/0",
     ]
 
-    static func hasCoverage(stateCode: String) -> Bool { endpoints[stateCode.uppercased()] != nil }
+    /// County-level endpoints for states with no free statewide layer, keyed
+    /// "STATE/COUNTY" (uppercased, no "County" suffix). Many Alabama counties
+    /// publish parcel *boundaries* free; owner names stay in the assessor's
+    /// system (the part Regrid licenses). Boundaries alone still show the lines.
+    static let countyEndpoints: [String: String] = [
+        "AL/COOSA": "https://maps.capturecama.com/arcgis/rest/services/Coosa/Coosa03122026/MapServer/171",
+    ]
+
+    private static func countyKey(_ state: String, _ county: String) -> String {
+        let c = county.uppercased()
+            .replacingOccurrences(of: " COUNTY", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return "\(state.uppercased())/\(c)"
+    }
+
+    static func hasCoverage(stateCode: String, county: String? = nil) -> Bool {
+        if endpoints[stateCode.uppercased()] != nil { return true }
+        if let c = county, countyEndpoints[countyKey(stateCode, c)] != nil { return true }
+        return false
+    }
 
     /// Normalize a placemark's administrativeArea (which may be a full name or a
     /// code) to a two-letter state code.
@@ -57,14 +76,17 @@ enum StateParcelService {
 
     /// Owner/id are picked from common field names so we do not need per-state
     /// field config. Lowercased for matching.
-    private static let ownerFields = ["ownername", "own_name", "owner1", "owner", "ownname", "ownername1", "taxpayer"]
+    private static let ownerFields = ["ownername", "own_name", "owner1", "owner", "ownname", "ownername1", "taxpayer", "ownerparcel"]
     private static let idFields = ["parcelid", "parcel_id", "parcel_id_nr", "pin", "print_key", "gisid", "propertyid", "parcelnumb"]
 
     static func parcels(stateCode: String,
+                        county: String? = nil,
                         center: CLLocationCoordinate2D,
                         radiusKm: Double = 6,
                         maxParcels: Int = 1000) async throws -> [Parcel] {
-        guard let base = endpoints[stateCode.uppercased()] else { return [] }
+        let base = endpoints[stateCode.uppercased()]
+            ?? county.flatMap { countyEndpoints[countyKey(stateCode, $0)] }
+        guard let base else { return [] }
         let m = GeoMath.metersPerDegree(atLatitude: center.latitude)
         let dLat = (radiusKm * 1000) / m.latM
         let dLon = (radiusKm * 1000) / m.lonM

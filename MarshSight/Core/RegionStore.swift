@@ -169,11 +169,12 @@ final class RegionStore: ObservableObject {
         // Per-state layers: parcels and regulatory hunting units, fetched from
         // whichever state we are in (if it publishes free data).
         let stateCode = StateParcelService.stateCode(from: placemark?.administrativeArea)
+        let county = placemark?.subAdministrativeArea
 
         var parcels: [Parcel] = []
-        if let stateCode, StateParcelService.hasCoverage(stateCode: stateCode) {
+        if let stateCode, StateParcelService.hasCoverage(stateCode: stateCode, county: county) {
             status = "Downloading parcels..."
-            parcels = (try? await StateParcelService.parcels(stateCode: stateCode, center: center)) ?? []
+            parcels = (try? await StateParcelService.parcels(stateCode: stateCode, county: county, center: center)) ?? []
         }
 
         // Fetch hunting units for any state: the service returns the state's
