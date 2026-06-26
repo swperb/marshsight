@@ -19,6 +19,7 @@ struct MapHomeView: View {
     let currentUnit: HuntingUnit?
     let weather: Weather?
     @ObservedObject var tides: TideStore
+    @ObservedObject var logbook: LogbookStore
 
     var onEnterAR: () -> Void
     var onReport: () -> Void
@@ -33,6 +34,11 @@ struct MapHomeView: View {
 
     @State private var recenterTick = 0
     @State private var showFeedback = false
+    @State private var showLogbook = false
+
+    private var tideNote: String? {
+        tides.next.map { "\($0.isHigh ? "High" : "Low") \(Self.tideTimeFmt.string(from: $0.time))" }
+    }
 
     @AppStorage("layer.land") private var showLand = true
     @AppStorage("layer.units") private var showUnits = true
@@ -79,6 +85,10 @@ struct MapHomeView: View {
             sideButtons
         }
         .sheet(isPresented: $showFeedback) { FeedbackView() }
+        .sheet(isPresented: $showLogbook) {
+            LogbookView(store: logbook, coordinate: location.fix?.coordinate,
+                        weather: weather, tideNote: tideNote)
+        }
     }
 
     // MARK: - Top bar
@@ -96,6 +106,7 @@ struct MapHomeView: View {
                 Label(gpsText, systemImage: gpsSymbol).foregroundStyle(gpsColor)
             }
             Menu {
+                Button { showLogbook = true } label: { Label("Logbook", systemImage: "book.closed") }
                 Button { showFeedback = true } label: { Label("Help & Feedback", systemImage: "questionmark.bubble") }
             } label: {
                 Image(systemName: "ellipsis")

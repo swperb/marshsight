@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var tides = TideStore()
     @StateObject private var recorder = TrackRecorder()
     @StateObject private var offline = OfflineManager()
+    @StateObject private var logbook = LogbookStore()
 
     @State private var showReport = false
     @State private var showRegionPicker = false
@@ -84,6 +85,7 @@ struct ContentView: View {
                     currentUnit: currentUnit,
                     weather: weather.weather,
                     tides: tides,
+                    logbook: logbook,
                     onEnterAR: { showAR = true },
                     onReport: { showReport = true },
                     onSwitchRegion: { showRegionPicker = true },
