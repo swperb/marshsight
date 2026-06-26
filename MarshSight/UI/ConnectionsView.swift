@@ -12,7 +12,7 @@ struct ConnectionsView: View {
 
     private var inboxAddress: String {
         let code = camCode.isEmpty ? "setup" : camCode
-        return "cam-\(code)@in.marshsight.com"
+        return "cam-\(code)@marshsight.com"
     }
 
     var body: some View {
