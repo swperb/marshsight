@@ -1,5 +1,2 @@
-# Render tooling deps — reinstall with `npm install` to regenerate assets.
 node_modules/
-
-# Local render previews (not shipped; real assets live in web/ and MarshSight/).
-preview-*.png
+*.png

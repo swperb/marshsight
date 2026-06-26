@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    <defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#27483b"/><stop offset="1" stop-color="#172e26"/></linearGradient></defs>
+    <rect width="1024" height="1024" fill="url(#gc)"/>
+    
+    
+    <!-- river bend -->
+    <path d="M 250 230 C 470 360, 300 520, 520 620 C 700 700, 560 840, 760 880"
+          fill="none" stroke="#5cc6dd" stroke-width="46" stroke-linecap="round" opacity="0.85"/>
+    <path d="M 250 230 C 470 360, 300 520, 520 620 C 700 700, 560 840, 760 880"
+          fill="none" stroke="#0e221c" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 34" opacity="0.5"/>
+    <!-- reticle -->
+    <circle cx="512" cy="500" r="120" fill="none" stroke="#f2efe6" stroke-width="24"/>
+    <circle cx="512" cy="500" r="34" fill="#e7c46a"/>
+    <g stroke="#f2efe6" stroke-width="24" stroke-linecap="round">
+      <line x1="512" y1="318" x2="512" y2="380"/>
+      <line x1="512" y1="620" x2="512" y2="682"/>
+      <line x1="330" y1="500" x2="392" y2="500"/>
+      <line x1="632" y1="500" x2="694" y2="500"/>
+    </g>
+    <rect x="3" y="3" width="1018" height="1018" rx="0" fill="none" stroke="#ffffff14" stroke-width="2"/>
+  </svg>

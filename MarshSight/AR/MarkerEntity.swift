@@ -86,12 +86,5 @@ final class MarkerEntity: Entity {
         labelAnchor.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
     }
 
-    private static func format(distance: Double) -> String {
-        if distance >= 1000 {
-            return String(format: "%.1f km", distance / 1000)
-        }
-        // Yards are the working unit for hunters and boaters in the US.
-        let yards = distance * 1.09361
-        return String(format: "%.0f yd", yards)
-    }
+    private static func format(distance: Double) -> String { Fmt.distance(distance) }
 }

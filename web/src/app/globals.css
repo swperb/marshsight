@@ -1,92 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  /* Dusk-marsh base + warm off-white foreground */
-  --background: #07140f;
-  --foreground: #eef3ec;
+  /* Light editorial field-guide: warm stone paper, dark ink, muted earth */
+  --background: #f4f1ea;
+  --foreground: #20241f;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-slab: var(--font-zilla-slab);
-  --font-hand: var(--font-caveat);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-fraunces);
 
-  /* Marsh — deep teal-green base scale */
-  --color-marsh-950: #040d09;
-  --color-marsh-900: #07140f;
-  --color-marsh-850: #0b1e16;
-  --color-marsh-800: #102a20;
-  --color-marsh-700: #1b3d2f;
-  --color-marsh-600: #295544;
-  --color-marsh-500: #3a6f59;
+  /* Paper / stone scale */
+  --color-paper-50: #fbfaf6;
+  --color-paper-100: #f4f1ea;
+  --color-paper-200: #ece7da;
+  --color-paper-300: #e0d9c7;
+  --color-paper-400: #cabfa3;
 
-  /* Moss — living green (legacy tokens kept for /privacy + accents) */
-  --color-moss-600: #4d9168;
-  --color-moss-500: #5fa777;
-  --color-moss-400: #7cc593;
-  --color-moss-300: #a3dcb3;
+  /* Ink */
+  --color-ink-900: #1b1f1a;
+  --color-ink-800: #20241f;
+  --color-ink-600: #4c534a;
+  --color-ink-500: #6b7268;
+  --color-ink-400: #8b9186;
 
-  /* Water — foggy teal highlights */
-  --color-water-600: #2487a0;
-  --color-water-500: #2fa6c2;
-  --color-water-400: #5cc6dd;
-  --color-water-300: #8fdcec;
+  /* Pine — primary muted earth accent */
+  --color-pine-800: #1f3329;
+  --color-pine-700: #2a4536;
+  --color-pine-600: #355441;
+  --color-pine-500: #4a6f57;
 
-  /* Amber / ember — sunrise warmth, primary call-to-action */
-  --color-ember-700: #a9551f;
-  --color-ember-600: #c66a26;
-  --color-amber-500: #e89a3c;
-  --color-amber-400: #f4b860;
-  --color-amber-300: #ffd28a;
+  /* Clay / ochre — secondary warm accent */
+  --color-clay-600: #9a5f2f;
+  --color-clay-500: #b07a3c;
+  --color-clay-400: #c79a5e;
 
-  --color-reed: #b9a05a;
-
-  --animate-fog: fog 32s ease-in-out infinite;
-  --animate-fog-slow: fog 48s ease-in-out infinite;
-}
-
-@keyframes fog {
-  0%, 100% { transform: translateX(0); opacity: 0.5; }
-  50% { transform: translateX(4%); opacity: 0.75; }
-}
-
-@keyframes drift {
-  from { transform: translateX(-8%); }
-  to { transform: translateX(108%); }
-}
-
-@keyframes flap {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.45); }
-}
-
-@keyframes float-y {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.7); opacity: 0.9; }
-  70% { transform: scale(2.2); opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@keyframes draw {
-  from { stroke-dashoffset: var(--len, 1000); }
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(22px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes sway {
-  0%, 100% { transform: rotate(-1.5deg); }
-  50% { transform: rotate(1.5deg); }
+  --color-line: #ddd6c6;
 }
 
 html {
@@ -96,36 +47,25 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Rugged display headings */
-.font-slab {
-  font-family: var(--font-slab), Georgia, "Times New Roman", serif;
-}
-.font-hand {
-  font-family: var(--font-hand), "Segoe Script", cursive;
+.font-serif {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
 }
 
-/* Subtle paper/topo grain so dark panels don't read flat */
-.grain {
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(232, 154, 60, 0.05), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(47, 166, 194, 0.05), transparent 45%);
-}
-
-.reveal {
-  animation: rise 0.7s ease-out both;
+/* Letterspaced editorial eyebrow */
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+  html {
+    scroll-behavior: auto;
   }
 }

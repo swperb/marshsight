@@ -20,11 +20,34 @@ struct HUDOverlay: View {
             if nearestGauge != nil { stageBanner }
             Spacer()
             hazardStack
-            steeringCard
+            if guidance.activeWaypoint != nil { steeringCard }
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, 16)
+        .overlay(alignment: .leading) { if offscreen == .left { edgeChevron(left: true) } }
+        .overlay(alignment: .trailing) { if offscreen == .right { edgeChevron(left: false) } }
+    }
+
+    /// When the destination is outside the camera's view, point the user which
+    /// way to turn. nil means it's roughly ahead.
+    private enum Side { case left, right }
+    private var offscreen: Side? {
+        guard guidance.activeWaypoint != nil else { return nil }
+        let b = relativeBearing
+        guard abs(b) > 32 else { return nil }
+        return b < 0 ? .left : .right
+    }
+
+    private func edgeChevron(left: Bool) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: left ? "chevron.compact.left" : "chevron.compact.right")
+                .font(.system(size: 64, weight: .black))
+            Text("Turn").font(.caption.weight(.bold))
+        }
+        .foregroundStyle(.cyan)
+        .shadow(color: .black.opacity(0.6), radius: 3)
+        .padding(left ? .leading : .trailing, 2)
     }
 
     // MARK: - Top bar: speed + GPS quality
@@ -133,7 +156,7 @@ struct HUDOverlay: View {
                     Text(alert.feature.name)
                         .fontWeight(.semibold)
                     Spacer()
-                    Text("\(Int(alert.distance * 1.09361)) yd")
+                    Text(Fmt.distance(alert.distance))
                         .monospacedDigit()
                 }
                 .foregroundStyle(.white)
@@ -154,14 +177,18 @@ struct HUDOverlay: View {
                 Text(guidance.activeWaypoint?.name ?? "Route complete")
                     .font(.headline)
                     .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(turnHint.text)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(turnHint.color)
                 if let d = guidance.distanceToWaypoint {
-                    Text("\(Int(d * 1.09361)) yd ahead")
+                    Text("\(Fmt.distance(d)) away")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.85))
                         .monospacedDigit()
                 }
                 if let launchD = guidance.distanceToLaunch {
-                    Text("Launch \(Int(launchD * 1.09361)) yd")
+                    Text("Launch \(Fmt.distance(launchD))")
                         .font(.caption)
                         .foregroundStyle(.yellow)
                         .monospacedDigit()
@@ -173,13 +200,22 @@ struct HUDOverlay: View {
         .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 18))
     }
 
+    /// Turn guidance from how far off the destination is from where you face.
+    private var turnHint: (text: String, color: Color) {
+        let a = abs(relativeBearing)
+        if a <= 18 { return ("Straight ahead", .green) }
+        if a >= 150 { return ("Turn around", .red) }
+        if a >= 60 { return (relativeBearing < 0 ? "Turn left" : "Turn right", .orange) }
+        return (relativeBearing < 0 ? "Bear left" : "Bear right", .yellow)
+    }
+
     private var steeringArrow: some View {
         ZStack {
             Circle().fill(.black.opacity(0.4))
             Circle().stroke(.white.opacity(0.3), lineWidth: 1)
             Image(systemName: "location.north.fill")
                 .font(.system(size: 30, weight: .bold))
-                .foregroundStyle(.cyan)
+                .foregroundStyle(turnHint.color)
                 .rotationEffect(.degrees(relativeBearing))
         }
         .frame(width: 64, height: 64)

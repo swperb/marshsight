@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f4034"/><stop offset="1" stop-color="#15302700"/></linearGradient>
+    <linearGradient id="ga2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22433a"/><stop offset="1" stop-color="#15302a"/></linearGradient></defs>
+    <rect width="1024" height="1024" fill="url(#ga2)"/>
+    
+    
+    <path d="M 382 250 L 262 250 L 262 370"
+           fill="none" stroke="#f2efe6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 642 250 L 762 250 L 762 370"
+           fill="none" stroke="#f2efe6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 382 750 L 262 750 L 262 630"
+           fill="none" stroke="#f2efe6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 642 750 L 762 750 L 762 630"
+           fill="none" stroke="#f2efe6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <path d="M 512 672.4
+             C 410.8 543.6, 420 451.6, 512 378
+             C 604 451.6, 613.2 543.6, 512 672.4 Z"
+          fill="#e7c46a"/>
+    <circle cx="512" cy="479.2" r="38.64" fill="#15302a"/>
+    <rect x="3" y="3" width="1018" height="1018" rx="0" fill="none" stroke="#ffffff14" stroke-width="2"/>
+  </svg>

@@ -187,8 +187,7 @@ struct MapHomeView: View {
 
     private var navStats: String {
         guard let d = engine.guidance.distanceToWaypoint else { return "Arrived" }
-        let mi = d / 1609.344
-        let dist = mi < 0.2 ? String(format: "%.0f yd", mi * 1760) : String(format: "%.1f mi", mi)
+        let dist = Fmt.distance(d)
         if let speed = location.fix?.speedMetersPerSecond, speed > 0.6 {
             let mins = Int((d / speed) / 60)
             return mins < 1 ? "\(dist)  ·  under 1 min" : "\(dist)  ·  \(mins) min"

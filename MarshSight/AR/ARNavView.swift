@@ -109,7 +109,11 @@ struct ARNavView: UIViewRepresentable {
             }
 
             for feature in features {
-                let offset = GeoMath.arPosition(of: feature.coordinate, from: origin)
+                // Place far markers at a capped distance in the correct direction
+                // so a destination miles away is a readable pin on the path, not
+                // an invisible speck on the horizon. The label shows the true
+                // distance.
+                let offset = GeoMath.arPosition(of: feature.coordinate, from: origin, maxDistance: 150)
                 let distance = GeoMath.distance(origin, feature.coordinate)
                 let worldPos = SIMD3<Float>(cameraPos.x + offset.x,
                                             cameraPos.y - 0.3,
@@ -193,10 +197,10 @@ struct ARNavView: UIViewRepresentable {
             let cam = arView.cameraTransform.translation
             for entity in entities.values {
                 entity.billboard(toward: cam)
-                // Keep a readable on-screen size, but clamp hard so a far marker
-                // never balloons into a screen-spanning label.
+                // Scale roughly with distance for a near-constant on-screen size,
+                // clamped so it stays readable but never screen-spanning.
                 let d = simd_distance(entity.position(relativeTo: nil), cam)
-                entity.scale = SIMD3(repeating: min(2.2, max(0.7, d / 35)))
+                entity.scale = SIMD3(repeating: min(7, max(1.0, d / 22)))
             }
         }
     }
