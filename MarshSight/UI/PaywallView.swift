@@ -10,11 +10,10 @@ struct PaywallView: View {
     @State private var working = false
 
     private let perks: [(String, String, String)] = [
-        ("map.circle.fill", "Private property lines & owners", "Parcel boundaries with owner names, licensed state by state"),
-        ("camera.fill", "Trail-camera sync", "Moultrie, Spypoint, and more land on your map, in one screen"),
-        ("person.2.fill", "Private land & hunting clubs", "Share your property, stands, and cameras with your party"),
+        ("camera.fill", "Trail-camera sync", "Email your Moultrie, Spypoint, and more straight onto your map"),
+        ("wind", "Scent cone & wind", "See your wind and scent drift right on the map before you set up"),
         ("brain.head.profile", "AI movement & bite forecasts", "On-device predictions from weather, moon, and tide"),
-        ("icloud.fill", "Unlimited cloud backup & sync", "Your spots and logbook on every device"),
+        ("icloud.fill", "Unlimited offline & cloud sync", "Download the whole flyway, back up your spots, sync every device"),
         ("leaf.fill", "Keep the core free for everyone", "Your support funds the open map the rest of us use free"),
     ]
 

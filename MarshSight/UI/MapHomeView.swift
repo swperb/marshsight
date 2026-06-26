@@ -22,6 +22,7 @@ struct MapHomeView: View {
     @ObservedObject var logbook: LogbookStore
     @ObservedObject var premium: PremiumStore
     @ObservedObject var feed: FeedStore
+    @ObservedObject var moderation: ModerationStore
 
     var onEnterAR: () -> Void
     var onReport: () -> Void
@@ -116,9 +117,9 @@ struct MapHomeView: View {
         }
         .sheet(isPresented: $showLegend) { LegendView() }
         .sheet(isPresented: $showPaywall) { PaywallView(store: premium) }
-        .sheet(isPresented: $showTrophy) { TrophyRoomView(store: logbook, feed: feed) }
+        .sheet(isPresented: $showTrophy) { TrophyRoomView(store: logbook, feed: feed, moderation: moderation) }
         .sheet(isPresented: $showConnections) { ConnectionsView() }
-        .sheet(isPresented: $showFeed) { FeedView(store: feed) }
+        .sheet(isPresented: $showFeed) { FeedView(store: feed, moderation: moderation) }
         .sheet(isPresented: $showCameras) { CamerasView(code: camCode) }
         .overlay {
             if !seenMapCoach, regions.active != nil {
@@ -394,11 +395,19 @@ struct MapHomeView: View {
     private var offlineMap: OfflineMap? { offline.maps.first { $0.id == offlineID } }
     private var isDownloadingActive: Bool { offline.downloadingID == offlineID }
 
+    /// Free users can keep a couple of offline regions; MarshSight+ is unlimited.
+    private static let freeOfflineLimit = 2
+
     private var offlineButton: some View {
         Button {
-            if let r = regions.active, !isDownloadingActive {
-                offline.download(regionName: r.name, center: r.center, basemap: basemap)
+            guard let r = regions.active, !isDownloadingActive else { return }
+            let alreadySaved = offline.maps.contains { $0.regionName == r.name }
+            if premium.locked(.unlimitedOffline), !alreadySaved,
+               offline.maps.count >= Self.freeOfflineLimit {
+                showPaywall = true
+                return
             }
+            offline.download(regionName: r.name, center: r.center, basemap: basemap)
         } label: {
             ZStack {
                 Circle().fill(.black.opacity(0.55)).frame(width: 46, height: 46)
@@ -452,7 +461,13 @@ struct MapHomeView: View {
             Toggle(isOn: $showWater) { Label("Water", systemImage: "drop.fill") }
             Toggle(isOn: $showTrails) { Label("Trails", systemImage: "figure.walk") }
             Toggle(isOn: $showSlope) { Label("Slope angle (online)", systemImage: "triangle.fill") }
-            Toggle(isOn: $showScent) { Label("Scent cone (wind)", systemImage: "wind") }
+            Toggle(isOn: $showScent) {
+                Label(premium.locked(.forecasts) ? "Scent cone (MarshSight+)" : "Scent cone (wind)",
+                      systemImage: premium.locked(.forecasts) ? "lock.fill" : "wind")
+            }
+            .onChange(of: showScent) { _, on in
+                if on && premium.locked(.forecasts) { showScent = false; showPaywall = true }
+            }
             Toggle(isOn: $showRadar) { Label("Weather radar (online)", systemImage: "cloud.rain.fill") }
         } label: {
             Image(systemName: "square.3.layers.3d")
@@ -548,8 +563,12 @@ struct MapHomeView: View {
                 }
             }
             if m.kind == "camera" {
-                Button { selectedMarker = nil; showCameras = true } label: {
-                    Label("View camera photos", systemImage: "photo.on.rectangle.angled")
+                Button {
+                    selectedMarker = nil
+                    if premium.locked(.trailCameras) { showPaywall = true } else { showCameras = true }
+                } label: {
+                    Label(premium.locked(.trailCameras) ? "View camera photos (MarshSight+)" : "View camera photos",
+                          systemImage: premium.locked(.trailCameras) ? "lock.fill" : "photo.on.rectangle.angled")
                         .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
                         .background(.blue.opacity(0.25), in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(.white)
                 }
